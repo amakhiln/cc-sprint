@@ -1,0 +1,76 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 08-13-2026 12:00
+last_updated: 08-25-2026 17:40
+project: Sprint & Velocity Planner
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+development_status:
+  epic-1: in-progress
+  1-1-project-scaffold-from-starter-template: done
+  1-2-add-team-member: done
+  1-3-remove-team-member: done
+  1-4-configure-shared-allocation-category-list: done
+  1-5-assign-allocation-per-team-member: review
+  1-6-edit-allocation-and-working-hours: review
+  1-7-create-a-sprint: review
+  epic-1-retrospective: optional
+
+  epic-2: in-progress
+  2-1-record-planned-leave: review
+  2-2-record-emergency-leave: review
+  2-3-record-holiday-office-closure: review
+  2-4-view-leave-and-holidays-by-team-member-and-sprint: review
+  2-5-compute-sprint-capacity-per-person-and-team-total: review
+  2-6-view-allocated-hours-breakdown: review
+  epic-2-retrospective: optional
+
+  epic-3: in-progress
+  3-1-connect-to-youtrack: review
+  3-2-browse-youtrack-backlog-issues: review
+  3-3-pull-backlog-issues-into-a-sprint: review
+  3-4-assign-issues-to-team-members-within-a-sprint: review
+  3-5-over-allocation-warning: review
+  epic-3-retrospective: optional
+
+  epic-4: in-progress
+  4-1-sprint-plan-overview: review
+  4-2-close-a-sprint-and-confirm-actual-velocity: review
+  4-3-velocity-history-and-trend: review
+  4-4-shared-read-only-team-view: review
+  epic-4-retrospective: optional
+
+  epic-5: in-progress
+  5-1-connect-a-youtrack-mcp-server: review
+  5-2-ask-the-assistant-about-youtrack-data: review
+  5-3-ask-the-assistant-about-this-app-s-own-data-too: backlog
+  epic-5-retrospective: optional

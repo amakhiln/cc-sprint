@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Team Member Detail: Sprint & Velocity Planner</title>
+<style>
+/* Governed by: EXPERIENCE.md Component Patterns (Team Member Detail Panel, Allocation % Editor, Leave Entry)
+   DESIGN.md Components (Card, Status Chip). Two states shown: panel at rest, and the Leave Entry form open. */
+:root{
+  --surface-base:#FFFFFF; --surface-raised:#F7F6FB; --border-subtle:#E7E3F3;
+  --ink-primary:#16121F; --ink-muted:#6B6478; --accent-primary:#7C5CFF; --signal-leave:#E8794A;
+  --font-display:'Space Grotesk','Century Gothic',ui-sans-serif,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-full:9999px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#EDEBF5;color:var(--ink-primary);font-family:var(--font-body);font-size:14px;line-height:1.5;padding:40px;}
+.caption{font-size:11px;color:var(--ink-muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
+.wrap{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;}
+.panel{width:420px;background:var(--surface-base);border:1px solid var(--border-subtle);border-radius:var(--r-lg);padding:24px;box-shadow:0 8px 24px rgba(22,18,31,0.08);}
+.panel h2{font-family:var(--font-display);font-size:20px;font-weight:600;}
+.panel .role{font-size:11px;color:var(--ink-muted);margin-top:2px;margin-bottom:20px;}
+.field-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-muted);margin-bottom:8px;margin-top:20px;}
+.field-label:first-of-type{margin-top:0;}
+.hours-input{display:flex;align-items:center;gap:8px;}
+.hours-input input{width:64px;font-family:var(--font-data);font-size:14px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:var(--r-sm);}
+.alloc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-subtle);}
+.alloc-row:last-child{border-bottom:none;}
+.alloc-name{font-size:14px;font-weight:500;}
+.alloc-pct{font-family:var(--font-data);font-weight:500;font-size:14px;display:flex;align-items:center;gap:6px;}
+.alloc-pct input{width:48px;font-family:var(--font-data);font-size:14px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:var(--r-sm);text-align:right;}
+.sum-row{display:flex;justify-content:space-between;padding-top:12px;font-size:11px;font-weight:600;}
+.sum-ok{color:var(--ink-muted);}
+.leave-list{margin-top:20px;}
+.leave-item{display:flex;justify-content:space-between;padding:8px 0;font-size:14px;border-bottom:1px solid var(--border-subtle);}
+.chip{display:inline-block;padding:2px 9px;border-radius:var(--r-full);font-size:11px;font-weight:600;background:var(--surface-raised);color:var(--ink-primary);}
+.chip.leave{color:var(--signal-leave);background:#FCEEE6;}
+.btn{width:100%;margin-top:16px;font-family:var(--font-body);font-size:14px;font-weight:600;padding:10px;border-radius:var(--r-sm);border:1px solid var(--border-subtle);background:var(--surface-base);color:var(--ink-primary);cursor:pointer;}
+.btn-primary{background:var(--accent-primary);color:#fff;border:none;}
+
+/* Leave entry popover state: frosted-glass overlay (DESIGN.md Elevation & Depth, Overlay Surface) */
+.popover-anchor{position:relative;width:320px;}
+.popover-backdrop{position:absolute;top:-30px;left:-30px;right:-30px;bottom:-30px;background:linear-gradient(135deg, var(--accent-primary) 0%, transparent 55%), linear-gradient(315deg, var(--signal-leave) 0%, transparent 45%);opacity:0.18;border-radius:var(--r-lg);z-index:0;}
+.popover{position:relative;z-index:1;width:320px;background:rgba(255,255,255,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.5);border-radius:var(--r-lg);padding:20px;box-shadow:0 8px 24px rgba(22,18,31,0.12);}
+@media (prefers-reduced-transparency: reduce){
+  .popover{background:var(--surface-base);backdrop-filter:none;-webkit-backdrop-filter:none;border:1px solid var(--border-subtle);}
+}
+.popover h3{font-family:var(--font-display);font-size:20px;font-weight:600;margin-bottom:16px;}
+.toggle-row{display:flex;background:var(--surface-raised);border-radius:var(--r-sm);padding:3px;margin-bottom:16px;}
+.toggle-row button{flex:1;border:none;background:none;padding:8px;font-size:11px;font-weight:600;border-radius:calc(var(--r-sm) - 2px);color:var(--ink-muted);}
+.toggle-row button.active{background:var(--surface-base);color:var(--ink-primary);box-shadow:0 1px 2px rgba(22,18,31,0.08);}
+.date-row{display:flex;gap:8px;margin-bottom:16px;}
+.date-row input{flex:1;font-family:var(--font-data);font-size:14px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:var(--r-sm);}
+.helper{font-size:11px;color:var(--ink-muted);margin-bottom:16px;}
+</style>
+</head>
+<body>
+  <div class="caption">State 1: Team Member Detail Panel, at rest</div>
+  <div class="wrap">
+    <div class="panel">
+      <h2>Priya Nair</h2>
+      <div class="role">8h/day · Team Member since Jan 2026</div>
+
+      <div class="field-label">Working Hours / Day</div>
+      <div class="hours-input"><input type="text" value="8" /><span style="color:var(--ink-muted);">hours</span></div>
+
+      <div class="field-label">Allocation</div>
+      <div class="alloc-row"><span class="alloc-name">Dev</span><span class="alloc-pct"><input type="text" value="90" />%</span></div>
+      <div class="alloc-row"><span class="alloc-name">Management</span><span class="alloc-pct"><input type="text" value="10" />%</span></div>
+      <div class="sum-row"><span class="sum-ok">Total</span><span class="sum-ok">100%</span></div>
+
+      <div class="field-label">Leave</div>
+      <div class="leave-list">
+        <div class="leave-item"><span>No leave recorded this sprint</span></div>
+      </div>
+      <button class="btn">Log Leave</button>
+    </div>
+
+    <div class="popover-anchor">
+      <div class="popover-backdrop"></div>
+      <div class="popover">
+      <h3>Log Leave: Priya Nair</h3>
+      <div class="toggle-row">
+        <button class="active">Planned</button>
+        <button>Emergency</button>
+      </div>
+      <div class="date-row">
+        <input type="text" value="Aug 18, 2026" />
+        <input type="text" value="Aug 19, 2026" />
+      </div>
+      <div class="helper">Applies immediately. Capacity recalculates as soon as you save.</div>
+      <button class="btn btn-primary">Save Leave</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:48px"></div>
+  <div class="caption">State 2: Allocation drifted off 100% (warn, not block, FR4)</div>
+  <div class="wrap">
+    <div class="panel">
+      <h2>Sam Okafor</h2>
+      <div class="role">8h/day · Team Member since Mar 2026</div>
+      <div class="field-label">Allocation</div>
+      <div class="alloc-row"><span class="alloc-name">DevOps</span><span class="alloc-pct"><input type="text" value="40" />%</span></div>
+      <div class="alloc-row"><span class="alloc-name">Dev</span><span class="alloc-pct"><input type="text" value="50" />%</span></div>
+      <div class="sum-row"><span style="color:var(--signal-leave);">⚠ Total</span><span style="color:var(--signal-leave);">90% (doesn't sum to 100%)</span></div>
+      <button class="btn btn-primary" style="margin-top:20px;">Save anyway</button>
+    </div>
+  </div>
+</body>
+</html>

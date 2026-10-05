@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: Sprint & Velocity
+      - link "Sprint Plan" [ref=e6] [cursor=pointer]:
+        - /url: /
+      - link "Roster" [ref=e13] [cursor=pointer]:
+        - /url: /roster
+      - link "Backlog" [ref=e20] [cursor=pointer]:
+        - /url: /sprint
+      - link "Progress" [ref=e25] [cursor=pointer]:
+        - /url: /progress
+      - link "Leave & Holidays" [ref=e29] [cursor=pointer]:
+        - /url: /leave
+      - link "Velocity History" [ref=e35] [cursor=pointer]:
+        - /url: /velocity-history
+      - link "Assistant" [ref=e40] [cursor=pointer]:
+        - /url: /assistant
+      - link "Settings" [ref=e44] [cursor=pointer]:
+        - /url: /settings
+  - generic [ref=e49]:
+    - generic [ref=e50]:
+      - heading "Progress" [level=1] [ref=e51]
+      - generic [ref=e52]: Oct 1, 2026 – Oct 14, 2026
+    - paragraph [ref=e54]:
+      - text: No issues in this Sprint yet —
+      - link "pull some from the Backlog" [ref=e55] [cursor=pointer]:
+        - /url: /sprint
+      - text: .
+  - button "Open Next.js Dev Tools" [ref=e61] [cursor=pointer]

@@ -1,0 +1,9 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - heading "Sprint & Velocity Planner" [level=1] [ref=e4]
+      - generic [ref=e5]:
+        - generic [ref=e6]: Password
+        - textbox "Password" [ref=e7]
+      - button "Sign in" [ref=e8]
+  - alert [ref=e9]

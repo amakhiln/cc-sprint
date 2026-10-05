@@ -1,0 +1,200 @@
+- generic [active] [ref=f3e1]:
+  - navigation [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - generic [ref=f3e4]: Sprint & Velocity
+      - link "Sprint Plan" [ref=f3e6] [cursor=pointer]:
+        - /url: /
+      - link "Roster" [ref=f3e12] [cursor=pointer]:
+        - /url: /roster
+      - link "Backlog" [ref=f3e18] [cursor=pointer]:
+        - /url: /sprint
+      - link "Leave & Holidays" [ref=f3e22] [cursor=pointer]:
+        - /url: /leave
+      - link "Velocity History" [ref=f3e27] [cursor=pointer]:
+        - /url: /velocity-history
+      - link "Assistant" [ref=f3e31] [cursor=pointer]:
+        - /url: /assistant
+      - link "Settings" [ref=f3e34] [cursor=pointer]:
+        - /url: /settings
+      - button "Search ⌘K" [ref=f3e38] [cursor=pointer]:
+        - text: Search
+        - generic [ref=f3e42]: ⌘K
+  - generic [ref=f3e43]:
+    - heading "Assistant" [level=1] [ref=f3e45]
+    - generic [ref=f3e46]:
+      - generic [ref=f3e47]:
+        - generic [ref=f3e61]:
+          - generic [ref=f3e62]: You
+          - paragraph [ref=f3e63]: How many issues are Bugs with State set to Planned? List a few of them.
+        - generic [ref=f3e64]:
+          - generic [ref=f3e65]: Assistant
+          - generic [ref=f3e66]:
+            - paragraph [ref=f3e67]:
+              - text: The query returned
+              - strong [ref=f3e68]: "13"
+              - text: issues that are of type
+              - strong [ref=f3e69]: Bug
+              - text: and have their
+              - strong [ref=f3e70]: State
+              - text: set to
+              - strong [ref=f3e71]: Planned
+              - text: .
+            - paragraph [ref=f3e72]: "Here are a few of those issues:"
+            - table [ref=f3e73]:
+              - rowgroup [ref=f3e74]:
+                - row [ref=f3e75]:
+                  - columnheader "ID" [ref=f3e76]
+                  - columnheader "Summary" [ref=f3e77]
+              - rowgroup [ref=f3e78]:
+                - row [ref=f3e79]:
+                  - cell "ADM-1901" [ref=f3e80]
+                  - cell "[CargoParse] AI Assist Incorrectly Applies Invalid Cargo Subtypes and Changes the Cargo Type" [ref=f3e81]
+                - row [ref=f3e82]:
+                  - cell "ADM-1933" [ref=f3e83]
+                  - cell "[CargoParse] Long Text and Numeric Values Overflow Cells in Roughsheet and Master Table" [ref=f3e84]
+                - row [ref=f3e85]:
+                  - cell "ADM-1918" [ref=f3e86]
+                  - cell "[Cargo Parse] Invalid Cargo Subtype Data Is Mapped and Added to the Master Table" [ref=f3e87]
+                - row [ref=f3e88]:
+                  - cell "ADM-1948" [ref=f3e89]
+                  - cell "[CargoParse] Incorrect Validation After Remapping Cargo Type Column" [ref=f3e90]
+                - row [ref=f3e91]:
+                  - cell "ADM-1947" [ref=f3e92]
+                  - cell "[CargoParse] Invalid Item Volume Data Is Added to the Master Table Without Validation" [ref=f3e93]
+            - paragraph [ref=f3e94]: (These are just a selection; the full list contains 13 matching issues.)
+          - generic [ref=f3e96]:
+            - paragraph [ref=f3e97]: "Source (YouTrack): search_issues"
+            - table [ref=f3e99]:
+              - rowgroup [ref=f3e100]:
+                - row [ref=f3e101]:
+                  - columnheader "id" [ref=f3e102]
+                  - columnheader "url" [ref=f3e103]
+                  - columnheader "summary" [ref=f3e104]
+                  - columnheader "project" [ref=f3e105]
+                  - columnheader "reporter" [ref=f3e106]
+                  - columnheader "resolvedAt" [ref=f3e107]
+                  - columnheader "createdAt" [ref=f3e108]
+                  - columnheader "updatedAt" [ref=f3e109]
+              - rowgroup [ref=f3e110]:
+                - row [ref=f3e111]:
+                  - cell "ADM-1901" [ref=f3e112]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1901" [ref=f3e113]
+                  - cell "[CargoParse] AI Assist Incorrectly Applies Invalid Cargo Subtypes and Changes the Cargo Type" [ref=f3e114]
+                  - cell "ADM" [ref=f3e115]
+                  - cell "Ananthu" [ref=f3e116]
+                  - cell [ref=f3e117]
+                  - cell "2026-08-21 14:49:17" [ref=f3e118]
+                  - cell "2026-09-07 10:15:12" [ref=f3e119]
+                - row [ref=f3e120]:
+                  - cell "ADM-1933" [ref=f3e121]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1933" [ref=f3e122]
+                  - cell "[CargoParse] Long Text and Numeric Values Overflow Cells in Roughsheet and Master Table" [ref=f3e123]
+                  - cell "ADM" [ref=f3e124]
+                  - cell "nayana.chandran" [ref=f3e125]
+                  - cell [ref=f3e126]
+                  - cell "2026-09-03 12:26:28" [ref=f3e127]
+                  - cell "2026-09-07 10:02:28" [ref=f3e128]
+                - row [ref=f3e129]:
+                  - cell "ADM-1918" [ref=f3e130]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1918" [ref=f3e131]
+                  - cell "[Cargo Parse] Invalid Cargo Subtype Data Is Mapped and Added to the Master Table" [ref=f3e132]
+                  - cell "ADM" [ref=f3e133]
+                  - cell "Ananthu" [ref=f3e134]
+                  - cell [ref=f3e135]
+                  - cell "2026-09-01 17:07:42" [ref=f3e136]
+                  - cell "2026-09-07 09:40:58" [ref=f3e137]
+                - row [ref=f3e138]:
+                  - cell "ADM-1948" [ref=f3e139]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1948" [ref=f3e140]
+                  - cell "[CargoParse] Incorrect Validation After Remapping Cargo Type Column" [ref=f3e141]
+                  - cell "ADM" [ref=f3e142]
+                  - cell "nayana.chandran" [ref=f3e143]
+                  - cell [ref=f3e144]
+                  - cell "2026-09-04 16:47:52" [ref=f3e145]
+                  - cell "2026-09-04 16:47:52" [ref=f3e146]
+                - row [ref=f3e147]:
+                  - cell "ADM-1947" [ref=f3e148]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1947" [ref=f3e149]
+                  - cell "[CargoParse] Invalid Item Volume Data Is Added to the Master Table Without Validation" [ref=f3e150]
+                  - cell "ADM" [ref=f3e151]
+                  - cell "Ananthu" [ref=f3e152]
+                  - cell [ref=f3e153]
+                  - cell "2026-09-04 15:52:48" [ref=f3e154]
+                  - cell "2026-09-04 15:53:14" [ref=f3e155]
+                - row [ref=f3e156]:
+                  - cell "ADM-1944" [ref=f3e157]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1944" [ref=f3e158]
+                  - cell "[CargoParse] Incorrect Length Validation for Coil Cargo" [ref=f3e159]
+                  - cell "ADM" [ref=f3e160]
+                  - cell "nayana.chandran" [ref=f3e161]
+                  - cell [ref=f3e162]
+                  - cell "2026-09-04 14:16:40" [ref=f3e163]
+                  - cell "2026-09-04 14:34:22" [ref=f3e164]
+                - row [ref=f3e165]:
+                  - cell "ADM-1942" [ref=f3e166]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1942" [ref=f3e167]
+                  - cell "[CargoParse] White Screen Appears After Inactivity When Performing an Action" [ref=f3e168]
+                  - cell "ADM" [ref=f3e169]
+                  - cell "Ananthu" [ref=f3e170]
+                  - cell [ref=f3e171]
+                  - cell "2026-09-04 10:54:02" [ref=f3e172]
+                  - cell "2026-09-04 10:54:02" [ref=f3e173]
+                - row [ref=f3e174]:
+                  - cell "ADM-1932" [ref=f3e175]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1932" [ref=f3e176]
+                  - cell "[CargoParse] Cargo Name Validation Message Is Inconsistent Between Roughsheet and Master Table" [ref=f3e177]
+                  - cell "ADM" [ref=f3e178]
+                  - cell "nayana.chandran" [ref=f3e179]
+                  - cell [ref=f3e180]
+                  - cell "2026-09-03 12:08:30" [ref=f3e181]
+                  - cell "2026-09-03 12:08:30" [ref=f3e182]
+                - row [ref=f3e183]:
+                  - cell "ADM-1920" [ref=f3e184]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1920" [ref=f3e185]
+                  - cell "[CargoParse] Extracted Data Is Not Mapped to the Sheet After Clicking Stop During Extraction" [ref=f3e186]
+                  - cell "ADM" [ref=f3e187]
+                  - cell "Ananthu" [ref=f3e188]
+                  - cell [ref=f3e189]
+                  - cell "2026-09-02 10:39:51" [ref=f3e190]
+                  - cell "2026-09-03 09:50:05" [ref=f3e191]
+                - row [ref=f3e192]:
+                  - cell "ADM-1912" [ref=f3e193]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1912" [ref=f3e194]
+                  - cell "[CargoParse] Net Volume Is Not Updated When Changing the Bulk Cargo Subtype" [ref=f3e195]
+                  - cell "ADM" [ref=f3e196]
+                  - cell "Ananthu" [ref=f3e197]
+                  - cell [ref=f3e198]
+                  - cell "2026-08-31 11:04:30" [ref=f3e199]
+                  - cell "2026-09-03 09:49:36" [ref=f3e200]
+                - row [ref=f3e201]:
+                  - cell "ADM-1906" [ref=f3e202]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1906" [ref=f3e203]
+                  - cell "[CargoParse]AI Assist Extracts Values into Incorrect Columns" [ref=f3e204]
+                  - cell "ADM" [ref=f3e205]
+                  - cell "Ananthu" [ref=f3e206]
+                  - cell [ref=f3e207]
+                  - cell "2026-08-25 11:09:43" [ref=f3e208]
+                  - cell "2026-09-03 09:48:32" [ref=f3e209]
+                - row [ref=f3e210]:
+                  - cell "ADM-1890" [ref=f3e211]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1890" [ref=f3e212]
+                  - cell "[CargoParse] Stop Button Does Not Stop the File Extraction Process" [ref=f3e213]
+                  - cell "ADM" [ref=f3e214]
+                  - cell "Ananthu" [ref=f3e215]
+                  - cell [ref=f3e216]
+                  - cell "2026-08-20 10:16:45" [ref=f3e217]
+                  - cell "2026-08-20 13:25:49" [ref=f3e218]
+                - row [ref=f3e219]:
+                  - cell "ADM-1781" [ref=f3e220]
+                  - cell "https://admarentech.myjetbrains.com/youtrack/issue/ADM-1781" [ref=f3e221]
+                  - cell "[CargoParse] Split Popup Closes After Validation Popup Is Dismissed" [ref=f3e222]
+                  - cell "ADM" [ref=f3e223]
+                  - cell "nayana.chandran" [ref=f3e224]
+                  - cell [ref=f3e225]
+                  - cell "2026-08-04 18:53:49" [ref=f3e226]
+                  - cell "2026-08-04 18:53:52" [ref=f3e227]
+      - generic [ref=f3e49]:
+        - textbox "Ask about issues, sprints, or projects…" [ref=f3e50]
+        - button "Ask" [disabled]
+  - button "Open Next.js Dev Tools" [ref=f3e56] [cursor=pointer]
+  - alert [ref=f3e60]

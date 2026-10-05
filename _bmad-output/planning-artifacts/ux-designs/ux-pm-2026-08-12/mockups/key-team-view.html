@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Team View (read-only): Sprint & Velocity Planner</title>
+<style>
+/* Governed by: EXPERIENCE.md Information Architecture (Team View), State Patterns (no edit affordances at all)
+   DESIGN.md Components (Capacity Ledger, Status Chip). Distinct rendering: no nav chrome, no edit controls anywhere. */
+:root{
+  --surface-base:#FFFFFF; --surface-raised:#F7F6FB; --border-subtle:#E7E3F3;
+  --ink-primary:#16121F; --ink-muted:#6B6478; --accent-primary:#7C5CFF; --signal-leave:#E8794A;
+  --font-display:'Space Grotesk','Century Gothic',ui-sans-serif,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-full:9999px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--surface-base);color:var(--ink-primary);font-family:var(--font-body);font-size:15px;line-height:1.5;}
+.wrap{max-width:760px;margin:0 auto;padding:40px 24px;}
+.topline{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}
+.brand{font-family:var(--font-display);font-weight:600;font-size:16px;letter-spacing:-0.01em;}
+.brand span{color:var(--accent-primary);}
+.readonly-tag{font-size:11px;font-weight:600;color:var(--ink-muted);background:var(--surface-raised);padding:4px 10px;border-radius:var(--r-full);text-transform:uppercase;letter-spacing:0.04em;}
+.pageheader h1{font-family:var(--font-display);font-size:20px;font-weight:600;}
+.pageheader .sub{color:var(--ink-muted);font-size:11px;margin-top:4px;margin-bottom:32px;}
+
+.ledger-card{background:var(--surface-raised);border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:24px;margin-bottom:48px;}
+.ledger-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;}
+.ledger-headline{font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.04em;}
+.ledger-figure{font-family:var(--font-data);font-weight:500;font-size:28px;letter-spacing:-0.01em;}
+.ledger-figure .of{color:var(--ink-muted);font-size:15px;font-weight:500;}
+.bar-track{height:12px;border-radius:var(--r-full);background:#fff;border:1px solid var(--border-subtle);overflow:hidden;display:flex;}
+.bar-fill-available{background:var(--accent-primary);height:100%;}
+.bar-fill-lost{background:var(--signal-leave);height:100%;}
+
+.section-title{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;margin-bottom:48px;}
+th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-muted);padding:8px 12px;border-bottom:1px solid var(--border-subtle);}
+th.num, td.num{text-align:right;}
+td{padding:12px;border-bottom:1px solid var(--border-subtle);font-size:15px;vertical-align:middle;}
+td.num{font-family:var(--font-data);font-weight:500;}
+.name{font-weight:600;}
+.name.you{color:var(--accent-primary);}
+.chip{display:inline-block;padding:3px 10px;border-radius:var(--r-full);font-size:11px;font-weight:600;background:var(--surface-raised);color:var(--ink-primary);}
+.chip.leave{color:var(--signal-leave);background:#FCEEE6;}
+
+.footnote{color:var(--ink-muted);font-size:11px;text-align:center;margin-top:32px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline">
+    <div class="brand">Sprint<span>&</span>Velocity</div>
+    <div class="readonly-tag">Read only</div>
+  </div>
+  <div class="pageheader">
+    <h1>Sprint 14</h1>
+    <div class="sub">Aug 11, 2026 to Aug 22, 2026. Shared by Akhil.</div>
+  </div>
+
+  <div class="ledger-card">
+    <div class="ledger-top">
+      <div class="ledger-headline">Team Capacity</div>
+      <div class="ledger-figure">168<span class="of">h planned of 219.2h available</span></div>
+    </div>
+    <div class="bar-track">
+      <div class="bar-fill-available" style="width:91.3%"></div>
+      <div class="bar-fill-lost" style="width:8.7%"></div>
+    </div>
+  </div>
+
+  <div class="section-title">Team</div>
+  <table>
+    <thead>
+      <tr><th>Team Member</th><th>Leave / Holiday</th><th class="num">Assigned</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="name you">Priya Nair (you)</td><td>&mdash;</td><td class="num">64.0h</td></tr>
+      <tr><td class="name">Jordan Reyes</td><td><span class="chip leave">Planned, 2d</span></td><td class="num">56.0h</td></tr>
+      <tr><td class="name">Sam Okafor</td><td><span class="chip leave">Holiday, 1d</span></td><td class="num">48.0h</td></tr>
+      <tr><td class="name">Lena Vogt</td><td>&mdash;</td><td class="num">0.0h</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">Your Assigned Issues (1)</div>
+  <table>
+    <thead>
+      <tr><th>Issue</th><th class="num">Estimate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>SVP-142: Fix pagination bug on orders page</td><td class="num">16.0h</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footnote">This link is read only. Ask Akhil if something needs to change.</div>
+</div>
+</body>
+</html>

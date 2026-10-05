@@ -1,0 +1,241 @@
+- generic [active] [ref=f1e1]:
+  - navigation [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - generic [ref=f1e4]: Sprint & Velocity
+      - link "Sprint Plan" [ref=f1e6] [cursor=pointer]:
+        - /url: /
+      - link "Roster" [ref=f1e12] [cursor=pointer]:
+        - /url: /roster
+      - link "Backlog" [ref=f1e18] [cursor=pointer]:
+        - /url: /sprint
+      - link "Leave & Holidays" [ref=f1e22] [cursor=pointer]:
+        - /url: /leave
+      - link "Velocity History" [ref=f1e27] [cursor=pointer]:
+        - /url: /velocity-history
+      - link "Assistant" [ref=f1e31] [cursor=pointer]:
+        - /url: /assistant
+      - link "Settings" [ref=f1e34] [cursor=pointer]:
+        - /url: /settings
+      - button "Search ⌘K" [ref=f1e38] [cursor=pointer]:
+        - text: Search
+        - generic [ref=f1e42]: ⌘K
+  - generic [ref=f1e43]:
+    - generic [ref=f1e44]:
+      - generic [ref=f1e45]:
+        - heading "Sprint Plan" [level=1] [ref=f1e46]
+        - generic [ref=f1e47]: Day 14 of 14 · Aug 20, 2026 – Sep 2, 2026
+      - generic [ref=f1e50]:
+        - link "Team View" [ref=f1e51] [cursor=pointer]:
+          - /url: /share/0580b7f0-72a3-4209-9bfc-c0c055e56a95
+        - button "Close Sprint" [ref=f1e55] [cursor=pointer]
+    - generic [ref=f1e56]:
+      - heading "Sprint Capacity" [level=2] [ref=f1e57]
+      - generic [ref=f1e58]:
+        - generic [ref=f1e59]:
+          - progressbar "Capacity" [ref=f1e60]:
+            - generic [ref=f1e64]:
+              - generic [ref=f1e65]: 0.0h
+              - generic [ref=f1e66]: of 657h
+          - generic [ref=f1e68]:
+            - generic [ref=f1e69]: 0.0h
+            - generic [ref=f1e70]: Assigned
+        - generic [ref=f1e73]:
+          - generic [ref=f1e74]: Team Breakdown
+          - generic [ref=f1e75]:
+            - generic [ref=f1e76]:
+              - generic [ref=f1e78]: Development
+              - generic [ref=f1e81]: 348.3h
+            - generic [ref=f1e82]:
+              - generic [ref=f1e84]: DevOps
+              - generic [ref=f1e87]: 9.0h
+            - generic [ref=f1e88]:
+              - generic [ref=f1e90]: Management
+              - generic [ref=f1e93]: 20.7h
+    - generic [ref=f1e94]:
+      - heading "Roster" [level=2] [ref=f1e95]
+      - list [ref=f1e96]:
+        - listitem [ref=f1e97]:
+          - generic [ref=f1e98]:
+            - generic [aria-hidden] [ref=f1e99]: A
+            - generic [ref=f1e100]:
+              - paragraph [ref=f1e101]: Ananthu
+              - paragraph [ref=f1e102]: 9h/day
+          - generic [ref=f1e103]:
+            - generic [ref=f1e104]: 63.0h
+            - progressbar "Capacity" [ref=f1e105]
+            - generic [ref=f1e107]: "Assigned: 18.0h"
+            - group [ref=f1e109]:
+              - generic "Breakdown for Ananthu" [ref=f1e110] [cursor=pointer]
+          - generic [ref=f1e111]:
+            - generic [ref=f1e112]: Development 100%
+            - generic [ref=f1e115]: Holiday
+        - listitem [ref=f1e117]:
+          - generic [ref=f1e118]:
+            - generic [aria-hidden] [ref=f1e119]: C
+            - generic [ref=f1e120]:
+              - paragraph [ref=f1e121]: Chanchel
+              - paragraph [ref=f1e122]: 9h/day
+          - generic [ref=f1e123]:
+            - generic [ref=f1e124]: 45.0h
+            - progressbar "Capacity" [ref=f1e125]
+            - generic [ref=f1e127]: "Assigned: 0.0h"
+            - group [ref=f1e129]:
+              - generic "Breakdown for Chanchel" [ref=f1e130] [cursor=pointer]
+          - generic [ref=f1e131]:
+            - generic [ref=f1e132]: Development 100%
+            - generic [ref=f1e135]:
+              - generic [ref=f1e136]: Planned Leave
+              - generic [ref=f1e137]: Holiday
+        - listitem [ref=f1e138]:
+          - generic [ref=f1e139]:
+            - generic [aria-hidden] [ref=f1e140]: G
+            - generic [ref=f1e141]:
+              - paragraph [ref=f1e142]: Gokul
+              - paragraph [ref=f1e143]: 9h/day
+          - generic [ref=f1e144]:
+            - generic [ref=f1e145]: 54.0h
+            - progressbar "Capacity" [ref=f1e146]
+            - generic [ref=f1e148]: "Assigned: 0.0h"
+            - group [ref=f1e150]:
+              - generic "Breakdown for Gokul" [ref=f1e151] [cursor=pointer]
+          - generic [ref=f1e152]:
+            - generic [ref=f1e153]: Development 100%
+            - generic [ref=f1e156]:
+              - generic [ref=f1e157]: Emergency Leave
+              - generic [ref=f1e158]: Holiday
+        - listitem [ref=f1e159]:
+          - generic [ref=f1e160]:
+            - generic [aria-hidden] [ref=f1e161]: H
+            - generic [ref=f1e162]:
+              - paragraph [ref=f1e163]: Hari
+              - paragraph [ref=f1e164]: 9h/day
+          - generic [ref=f1e165]:
+            - generic [ref=f1e166]: 31.5h
+            - progressbar "Capacity" [ref=f1e167]
+            - generic [ref=f1e169]:
+              - generic [ref=f1e170]: "Assigned: 36.0h"
+              - generic [ref=f1e171]: Over-allocated
+            - group [ref=f1e172]:
+              - generic "Breakdown for Hari" [ref=f1e173] [cursor=pointer]
+          - generic [ref=f1e174]:
+            - generic [ref=f1e175]:
+              - generic [ref=f1e176]: Development 70%
+              - generic [ref=f1e178]: DevOps 20%
+              - generic [ref=f1e180]: Management 10%
+            - generic [ref=f1e182]:
+              - generic [ref=f1e183]: Planned Leave
+              - generic [ref=f1e184]: Holiday
+        - listitem [ref=f1e185]:
+          - generic [ref=f1e186]:
+            - generic [aria-hidden] [ref=f1e187]: J
+            - generic [ref=f1e188]:
+              - paragraph [ref=f1e189]: Jyothish
+              - paragraph [ref=f1e190]: 9h/day
+          - generic [ref=f1e191]:
+            - generic [ref=f1e192]: 36.0h
+            - progressbar "Capacity" [ref=f1e193]
+            - generic [ref=f1e195]: "Assigned: 0.0h"
+            - group [ref=f1e197]:
+              - generic "Breakdown for Jyothish" [ref=f1e198] [cursor=pointer]
+          - generic [ref=f1e199]:
+            - generic [ref=f1e200]:
+              - generic [ref=f1e201]: Development 80%
+              - generic [ref=f1e203]: Management 20%
+            - generic [ref=f1e205]:
+              - generic [ref=f1e206]: Planned Leave
+              - generic [ref=f1e207]: Holiday
+        - listitem [ref=f1e208]:
+          - generic [ref=f1e209]:
+            - generic [aria-hidden] [ref=f1e210]: "N"
+            - generic [ref=f1e211]:
+              - paragraph [ref=f1e212]: Nayana
+              - paragraph [ref=f1e213]: 9h/day
+          - generic [ref=f1e214]:
+            - generic [ref=f1e215]: 28.8h
+            - progressbar "Capacity" [ref=f1e216]
+            - generic [ref=f1e218]: "Assigned: 27.0h"
+            - group [ref=f1e220]:
+              - generic "Breakdown for Nayana" [ref=f1e221] [cursor=pointer]
+          - generic [ref=f1e222]:
+            - generic [ref=f1e223]:
+              - generic [ref=f1e224]: Development 80%
+              - generic [ref=f1e226]: Management 20%
+            - generic [ref=f1e228]:
+              - generic [ref=f1e229]: Planned Leave
+              - generic [ref=f1e230]: Holiday
+        - listitem [ref=f1e231]:
+          - generic [ref=f1e232]:
+            - generic [aria-hidden] [ref=f1e233]: R
+            - generic [ref=f1e234]:
+              - paragraph [ref=f1e235]: Reshma
+              - paragraph [ref=f1e236]: 9h/day
+          - generic [ref=f1e237]:
+            - generic [ref=f1e238]: 63.0h
+            - progressbar "Capacity" [ref=f1e239]
+            - generic [ref=f1e241]: "Assigned: 0.0h"
+            - group [ref=f1e243]:
+              - generic "Breakdown for Reshma" [ref=f1e244] [cursor=pointer]
+          - generic [ref=f1e245]:
+            - generic [ref=f1e246]: Development 100%
+            - generic [ref=f1e249]: Holiday
+        - listitem [ref=f1e251]:
+          - generic [ref=f1e252]:
+            - generic [aria-hidden] [ref=f1e253]: R
+            - generic [ref=f1e254]:
+              - paragraph [ref=f1e255]: Robin
+              - paragraph [ref=f1e256]: 9h/day
+          - generic [ref=f1e257]:
+            - generic [ref=f1e258]: 27.0h
+            - progressbar "Capacity" [ref=f1e259]
+            - generic [ref=f1e261]: "Assigned: 0.0h"
+            - group [ref=f1e263]:
+              - generic "Breakdown for Robin" [ref=f1e264] [cursor=pointer]
+          - generic [ref=f1e265]:
+            - generic [ref=f1e266]: Development 100%
+            - generic [ref=f1e269]:
+              - generic [ref=f1e270]: Planned Leave
+              - generic [ref=f1e271]: Holiday
+    - generic [ref=f1e272]:
+      - heading "Assigned Backlog Issues" [level=2] [ref=f1e273]
+      - list [ref=f1e274]:
+        - listitem [ref=f1e275]:
+          - 'button "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist Ananthu 18.0h" [ref=f1e276] [cursor=pointer]':
+            - paragraph [ref=f1e277]: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+            - generic [ref=f1e278]:
+              - generic [ref=f1e279]:
+                - generic [aria-hidden] [ref=f1e280]: A
+                - generic [ref=f1e281]: Ananthu
+              - generic [ref=f1e282]: 18.0h
+        - listitem [ref=f1e287]:
+          - 'button "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist Nayana 18.0h" [ref=f1e288] [cursor=pointer]':
+            - paragraph [ref=f1e289]: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+            - generic [ref=f1e290]:
+              - generic [ref=f1e291]:
+                - generic [aria-hidden] [ref=f1e292]: "N"
+                - generic [ref=f1e293]: Nayana
+              - generic [ref=f1e294]: 18.0h
+        - listitem [ref=f1e299]:
+          - button "LLM Token limit per user schema and services Hari 18.0h" [ref=f1e300] [cursor=pointer]:
+            - paragraph [ref=f1e301]: LLM Token limit per user schema and services
+            - generic [ref=f1e302]:
+              - generic [ref=f1e303]:
+                - generic [aria-hidden] [ref=f1e304]: H
+                - generic [ref=f1e305]: Hari
+              - generic [ref=f1e306]: 18.0h
+        - listitem [ref=f1e311]:
+          - button "bulk ingest batching, extraction pipeline hardening, retry policy Hari 18.0h" [ref=f1e312] [cursor=pointer]:
+            - paragraph [ref=f1e313]: bulk ingest batching, extraction pipeline hardening, retry policy
+            - generic [ref=f1e314]:
+              - generic [ref=f1e315]:
+                - generic [aria-hidden] [ref=f1e316]: H
+                - generic [ref=f1e317]: Hari
+              - generic [ref=f1e318]: 18.0h
+        - listitem [ref=f1e323]:
+          - 'button "QA - Manual Testing of ADM- 1850: Grouping Feature Nayana 9.0h" [ref=f1e324] [cursor=pointer]':
+            - paragraph [ref=f1e325]: "QA - Manual Testing of ADM- 1850: Grouping Feature"
+            - generic [ref=f1e326]:
+              - generic [ref=f1e327]:
+                - generic [aria-hidden] [ref=f1e328]: "N"
+                - generic [ref=f1e329]: Nayana
+              - generic [ref=f1e330]: 9.0h
+  - button "Open Next.js Dev Tools" [ref=f1e340] [cursor=pointer]

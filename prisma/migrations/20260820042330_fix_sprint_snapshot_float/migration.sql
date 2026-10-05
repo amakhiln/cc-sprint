@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Sprint" ALTER COLUMN "snapshotCapacityHours" SET DATA TYPE DOUBLE PRECISION,
+ALTER COLUMN "snapshotActualVelocityHours" SET DATA TYPE DOUBLE PRECISION;

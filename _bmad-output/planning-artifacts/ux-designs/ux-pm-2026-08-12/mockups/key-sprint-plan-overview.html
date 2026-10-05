@@ -1,0 +1,280 @@
+<!--
+  Governed by: DESIGN.md (Aurora Light identity — universal glassmorphism, General
+  Sans + Satoshi). Canonical Sprint Plan Overview mockup as of 2026-08-17.
+  RATIONALE: A light, airy register aimed at making a dense capacity-planning tool feel
+  calm rather than clinical, soft pastel gradient mesh (peach, lilac, mint) behind
+  bright white glass panels gives the frost something gentle to filter, with generous
+  whitespace and rounded pill shapes lowering the visual pressure of all the numbers.
+  General Sans' clean geometric letterforms keep headlines feeling current and
+  confident without the boutique-serif quirk, while Satoshi's crisp, slightly
+  rounded grotesque keeps dense roster data friendly and easy to scan -- both
+  read as modern SaaS-native rather than editorial.
+  FONT PAIRING: General Sans (display/headings) + Satoshi (body/data)
+  PALETTE:
+    background base   #FBF7F2 mesh with pastel blobs
+    blob accent 1      #FFC9A8 (peach)
+    blob accent 2      #C9B8FF (lilac)
+    blob accent 3      #9BE8CE (mint)
+    glass fill         rgba(255,255,255,0.55)
+    glass border       rgba(255,255,255,0.9)
+    text primary       #34302C
+    text muted         #8A8177
+    accent / positive  #FF8B6B
+    warning            #E0575C
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sprint &amp; Velocity Planner — Sprint Plan Overview</title>
+<style>
+  :root{
+    --accent:#FF8B6B;
+    --accent-2:#8E7CFF;
+    --accent-3:#3FBF95;
+    --warn:#E0575C;
+    --text:#34302C;
+    --text-muted:#8A8177;
+    --glass:rgba(255,255,255,0.55);
+    --glass-strong:rgba(255,255,255,0.7);
+    --border:rgba(255,255,255,0.9);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Satoshi','Segoe UI',system-ui,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 10% 15%, rgba(255,201,168,0.65), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(201,184,255,0.55), transparent 42%),
+      radial-gradient(circle at 85% 85%, rgba(155,232,206,0.55), transparent 45%),
+      radial-gradient(circle at 15% 90%, rgba(255,214,168,0.4), transparent 40%),
+      #FBF7F2;
+    background-attachment:fixed;
+    padding:36px;
+  }
+  h1,h2,h3,.display{
+    font-family:'General Sans','Satoshi','Segoe UI',sans-serif;
+    margin:0;
+    font-weight:500;
+    letter-spacing:0.002em;
+  }
+  .glass{
+    background:var(--glass);
+    backdrop-filter:blur(28px) saturate(160%);
+    -webkit-backdrop-filter:blur(28px) saturate(160%);
+    border:1px solid var(--border);
+    border-radius:28px;
+    box-shadow:0 20px 50px rgba(160,130,100,0.14), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+  .app-shell{max-width:1360px;margin:0 auto;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;margin-bottom:28px;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand .mark{
+    width:38px;height:38px;border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  }
+  .brand .name{font-family:'General Sans',sans-serif;font-size:17px;font-weight:500;}
+  .brand .sub{font-size:12px;color:var(--text-muted);}
+  .sprint-pill{padding:9px 18px;border-radius:999px;font-size:13px;color:var(--text-muted);}
+  .avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent-3),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
+  }
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:start;}
+  .stack{display:flex;flex-direction:column;gap:28px;}
+  .card{padding:32px;}
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;}
+  .card-head h2{font-size:21px;}
+  .card-head .hint{font-size:12px;color:var(--text-muted);}
+
+  .ledger{display:flex;align-items:center;gap:12px;}
+  .headline{font-size:56px;font-weight:500;line-height:1;}
+  .headline-wrap{flex:0 0 auto;padding-right:28px;border-right:1px solid rgba(138,129,119,0.2);}
+  .headline .unit{font-size:16px;color:var(--text-muted);font-family:'Satoshi';display:block;margin-top:6px;}
+  .ledger-stats{flex:1;padding-left:28px;display:flex;flex-direction:column;gap:16px;}
+  .pillbar{height:22px;border-radius:999px;overflow:hidden;display:flex;background:rgba(138,129,119,0.12);}
+  .seg{height:100%;}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--text-muted);}
+  .legend span.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;}
+  .stat-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);}
+  .stat-row b{color:var(--text);font-weight:600;}
+
+  .roster-list{display:flex;flex-direction:column;gap:14px;}
+  .roster-card{
+    display:grid;grid-template-columns:2fr 1.6fr 1fr 1fr;gap:18px;align-items:center;
+    padding:18px 20px;border-radius:20px;background:rgba(255,255,255,0.45);
+    border:1px solid rgba(255,255,255,0.8);
+  }
+  .member{display:flex;align-items:center;gap:12px;}
+  .member .av{
+    width:36px;height:36px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;
+  }
+  .member .who b{display:block;font-size:14px;}
+  .member .who span{font-size:11.5px;color:var(--text-muted);}
+  .cat-pills{display:flex;gap:6px;flex-wrap:wrap;}
+  .pill{padding:4px 10px;border-radius:999px;font-size:11px;background:rgba(138,129,119,0.12);}
+  .capacity-num{font-family:'General Sans',sans-serif;font-size:20px;}
+  .capacity-num span{font-size:11px;color:var(--text-muted);display:block;font-family:'Satoshi';}
+  .status{justify-self:end;}
+  .chip{display:inline-flex;padding:5px 12px;border-radius:999px;font-size:11.5px;font-weight:600;}
+  .chip.ok{background:rgba(63,191,149,0.16);color:#237A5C;}
+  .chip.warn{background:rgba(224,87,92,0.16);color:var(--warn);}
+
+  .items-list{display:flex;flex-direction:column;gap:10px;}
+  .item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;border-radius:16px;background:rgba(255,255,255,0.4);
+    border:1px solid rgba(255,255,255,0.8);
+  }
+  .item .title{font-size:13.5px;font-weight:600;}
+  .item .meta{font-size:11.5px;color:var(--text-muted);margin-top:3px;}
+  .item .hrs{font-family:'General Sans',sans-serif;font-size:17px;}
+
+  .detail-name{font-family:'General Sans',sans-serif;font-size:22px;}
+  .detail-role{font-size:12.5px;color:var(--text-muted);margin-top:3px;}
+  .field-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:22px 0 10px;}
+  .hours-row{display:flex;justify-content:space-between;font-size:13px;padding:9px 0;border-top:1px solid rgba(138,129,119,0.15);}
+  .cat-row{margin-bottom:14px;}
+  .cat-row .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;}
+  .cat-track{height:9px;border-radius:6px;background:rgba(138,129,119,0.12);overflow:hidden;}
+  .cat-fill{height:100%;border-radius:6px;}
+  .sum-indicator{margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:10px 14px;border-radius:14px;}
+  .sum-indicator.ok{background:rgba(63,191,149,0.14);color:#237A5C;}
+  .leave-item{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-muted);padding:6px 0;}
+  .leave-item b{color:var(--text);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar glass">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <div class="name">Sprint &amp; Velocity Planner</div>
+        <div class="sub">Platform Team</div>
+      </div>
+    </div>
+    <div class="sprint-pill glass">Sprint 24 · Aug 18–Aug 29, 2026 · 10 working days</div>
+    <div class="avatar">RK</div>
+  </div>
+
+  <div class="layout">
+    <div class="stack">
+
+      <section class="card glass">
+        <div class="card-head"><h2>Sprint capacity</h2><span class="hint">380h gross, 24h lost to leave</span></div>
+        <div class="ledger">
+          <div class="headline-wrap">
+            <div class="headline">356h<span class="unit">available this sprint</span></div>
+          </div>
+          <div class="ledger-stats">
+            <div class="stat-row"><span>Team size</span><b>5 people</b></div>
+            <div class="stat-row"><span>Leave / holiday deducted</span><b style="color:var(--warn)">−24h</b></div>
+            <div class="pillbar">
+              <div class="seg" style="width:55%;background:var(--accent)"></div>
+              <div class="seg" style="width:13%;background:var(--accent-2)"></div>
+              <div class="seg" style="width:22%;background:var(--accent-3)"></div>
+              <div class="seg" style="width:10%;background:#F2C879"></div>
+            </div>
+            <div class="legend">
+              <span><span class="dot" style="background:var(--accent)"></span>Dev · 194h</span>
+              <span><span class="dot" style="background:var(--accent-2)"></span>Management · 46h</span>
+              <span><span class="dot" style="background:var(--accent-3)"></span>DevOps · 78h</span>
+              <span><span class="dot" style="background:#F2C879"></span>QA · 38h</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card glass">
+        <div class="card-head"><h2>Roster &amp; allocation</h2><span class="hint">5 people</span></div>
+        <div class="roster-list">
+          <div class="roster-card">
+            <div class="member"><span class="av">PS</span><span class="who"><b>Priya Sharma</b><span>Senior Engineer · 8h/day · 1 day leave</span></span></div>
+            <div class="cat-pills"><span class="pill">Dev 70%</span><span class="pill">Mgmt 10%</span><span class="pill">DevOps 20%</span></div>
+            <div class="capacity-num">72h<span>capacity</span></div>
+            <div class="status"><span class="chip ok">On track · 58h</span></div>
+          </div>
+          <div class="roster-card">
+            <div class="member"><span class="av">MW</span><span class="who"><b>Marcus Webb</b><span>Engineer · 8h/day · no leave</span></span></div>
+            <div class="cat-pills"><span class="pill">Dev 90%</span><span class="pill">QA 10%</span></div>
+            <div class="capacity-num">80h<span>capacity</span></div>
+            <div class="status"><span class="chip ok">On track · 74h</span></div>
+          </div>
+          <div class="roster-card">
+            <div class="member"><span class="av">EF</span><span class="who"><b>Elena Fischer</b><span>Engineering Manager · 8h/day · 2 days leave</span></span></div>
+            <div class="cat-pills"><span class="pill">Mgmt 60%</span><span class="pill">Dev 40%</span></div>
+            <div class="capacity-num">64h<span>capacity</span></div>
+            <div class="status"><span class="chip ok">On track · 50h</span></div>
+          </div>
+          <div class="roster-card">
+            <div class="member"><span class="av">TO</span><span class="who"><b>Tom Okafor</b><span>DevOps Engineer · 8h/day · no leave</span></span></div>
+            <div class="cat-pills"><span class="pill">DevOps 80%</span><span class="pill">Dev 20%</span></div>
+            <div class="capacity-num">80h<span>capacity</span></div>
+            <div class="status"><span class="chip ok">On track · 76h</span></div>
+          </div>
+          <div class="roster-card" style="background:rgba(224,87,92,0.08);border-color:rgba(224,87,92,0.3);">
+            <div class="member"><span class="av">SR</span><span class="who"><b>Sofia Ricci</b><span>Engineer · 0.75 FTE · 6h/day</span></span></div>
+            <div class="cat-pills"><span class="pill">Dev 50%</span><span class="pill">QA 50%</span></div>
+            <div class="capacity-num">60h<span>capacity</span></div>
+            <div class="status"><span class="chip warn">+18h over · 78h</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card glass">
+        <div class="card-head"><h2>Assigned work items</h2><span class="hint">232h across 9 items</span></div>
+        <div class="items-list">
+          <div class="item"><div><div class="title">Checkout payment-retry flow</div><div class="meta">Dev · Priya Sharma, Sofia Ricci</div></div><div class="hrs">40h</div></div>
+          <div class="item"><div><div class="title">Sprint board real-time sync</div><div class="meta">Dev · Marcus Webb</div></div><div class="hrs">32h</div></div>
+          <div class="item"><div><div class="title">Onboarding flow redesign</div><div class="meta">Dev · Sofia Ricci</div></div><div class="hrs">30h</div></div>
+          <div class="item"><div><div class="title">OAuth SSO migration</div><div class="meta">Dev · Marcus Webb, Priya Sharma</div></div><div class="hrs">24h</div></div>
+          <div class="item"><div><div class="title">K8s cluster autoscaling policy</div><div class="meta">DevOps · Tom Okafor</div></div><div class="hrs">28h</div></div>
+          <div class="item"><div><div class="title">Release pipeline hardening</div><div class="meta">DevOps · Tom Okafor</div></div><div class="hrs">20h</div></div>
+          <div class="item"><div><div class="title">Regression suite, checkout</div><div class="meta">QA · Sofia Ricci, Marcus Webb</div></div><div class="hrs">18h</div></div>
+          <div class="item"><div><div class="title">Sprint ceremonies &amp; 1:1s</div><div class="meta">Management · Elena Fischer, Priya Sharma</div></div><div class="hrs">20h</div></div>
+          <div class="item"><div><div class="title">Q4 roadmap planning</div><div class="meta">Management · Elena Fischer</div></div><div class="hrs">20h</div></div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="card glass" style="position:sticky;top:28px;">
+      <div class="detail-name">Sofia Ricci</div>
+      <div class="detail-role">Engineer · 0.75 FTE · 6h/day</div>
+      <div class="field-label" style="margin-top:16px;color:var(--warn);">Capacity warning</div>
+      <div style="font-size:12.5px;background:rgba(224,87,92,0.12);color:var(--warn);padding:12px 14px;border-radius:16px;">
+        Assigned 78h against a 60h capacity this sprint, 18h over.
+      </div>
+
+      <div class="field-label">Working hours</div>
+      <div class="hours-row"><span>Hours / day</span><b>6h</b></div>
+      <div class="hours-row"><span>Sprint working days</span><b>10 days</b></div>
+      <div class="hours-row"><span>Leave taken</span><b>0 days</b></div>
+      <div class="hours-row"><span>Computed capacity</span><b>60h</b></div>
+
+      <div class="field-label">Category allocation</div>
+      <div class="cat-row">
+        <div class="top"><span>Dev</span><span>50%</span></div>
+        <div class="cat-track"><div class="cat-fill" style="width:50%;background:var(--accent)"></div></div>
+      </div>
+      <div class="cat-row">
+        <div class="top"><span>QA</span><span>50%</span></div>
+        <div class="cat-track"><div class="cat-fill" style="width:50%;background:#F2C879"></div></div>
+      </div>
+      <div class="sum-indicator ok"><span>Running total</span><b>100% ✓</b></div>
+
+      <div class="field-label">Leave &amp; holidays</div>
+      <div class="leave-item"><span>No leave scheduled this sprint</span></div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

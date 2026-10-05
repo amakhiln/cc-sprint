@@ -1,0 +1,158 @@
+- generic [active] [ref=f4e1]:
+  - navigation [ref=f4e2]:
+    - generic [ref=f4e3]:
+      - generic [ref=f4e4]: Sprint & Velocity
+      - link "Sprint Plan" [ref=f4e6] [cursor=pointer]:
+        - /url: /
+      - link "Roster" [ref=f4e12] [cursor=pointer]:
+        - /url: /roster
+      - link "Backlog" [ref=f4e18] [cursor=pointer]:
+        - /url: /sprint
+      - link "Leave & Holidays" [ref=f4e22] [cursor=pointer]:
+        - /url: /leave
+      - link "Velocity History" [ref=f4e27] [cursor=pointer]:
+        - /url: /velocity-history
+      - link "Assistant" [ref=f4e31] [cursor=pointer]:
+        - /url: /assistant
+      - link "Settings" [ref=f4e34] [cursor=pointer]:
+        - /url: /settings
+      - button "Search ⌘K" [ref=f4e38] [cursor=pointer]:
+        - text: Search
+        - generic [ref=f4e42]: ⌘K
+  - generic [ref=f4e43]:
+    - heading "Assistant" [level=1] [ref=f4e45]
+    - generic [ref=f4e46]:
+      - generic [ref=f4e47]:
+        - generic [ref=f4e61]:
+          - generic [ref=f4e62]: You
+          - paragraph [ref=f4e63]: List a few Bug issues with State Planned, including their assignees.
+        - generic [ref=f4e64]:
+          - generic [ref=f4e65]: Assistant
+          - generic [ref=f4e66]:
+            - paragraph [ref=f4e67]:
+              - text: Here are a few
+              - strong [ref=f4e68]: Bug
+              - text: issues that have
+              - strong [ref=f4e69]: State = Planned
+              - text: ", together with the assignee information that’s available:"
+            - table [ref=f4e70]:
+              - rowgroup [ref=f4e71]:
+                - row [ref=f4e72]:
+                  - columnheader "Issue ID" [ref=f4e73]
+                  - columnheader "Summary" [ref=f4e74]
+                  - columnheader "Assignee" [ref=f4e75]
+              - rowgroup [ref=f4e76]:
+                - row [ref=f4e77]:
+                  - cell [ref=f4e78]:
+                    - strong [ref=f4e79]: ADM‑1901
+                  - cell "[CargoParse] AI Assist Incorrectly Applies Invalid Cargo Subtypes and Changes the Cargo Type" [ref=f4e80]
+                  - cell [ref=f4e81]:
+                    - strong [ref=f4e82]: reshma.kr
+                - row [ref=f4e83]:
+                  - cell [ref=f4e84]:
+                    - strong [ref=f4e85]: ADM‑1933
+                  - cell "[CargoParse] Long Text and Numeric Values Overflow Cells in Roughsheet and Master Table" [ref=f4e86]
+                  - cell [ref=f4e87]:
+                    - emphasis [ref=f4e88]: Assignee not available
+                - row [ref=f4e89]:
+                  - cell [ref=f4e90]:
+                    - strong [ref=f4e91]: ADM‑1918
+                  - cell "[Cargo Parse] Invalid Cargo Subtype Data Is Mapped and Added to the Master Table" [ref=f4e92]
+                  - cell [ref=f4e93]:
+                    - emphasis [ref=f4e94]: Assignee not available
+                - row [ref=f4e95]:
+                  - cell [ref=f4e96]:
+                    - strong [ref=f4e97]: ADM‑1948
+                  - cell "[CargoParse] Incorrect Validation After Remapping Cargo Type Column" [ref=f4e98]
+                  - cell [ref=f4e99]:
+                    - emphasis [ref=f4e100]: Assignee not available
+                - row [ref=f4e101]:
+                  - cell [ref=f4e102]:
+                    - strong [ref=f4e103]: ADM‑1947
+                  - cell "[CargoParse] Invalid Item Volume Data Is Added to the Master Table Without Validation" [ref=f4e104]
+                  - cell [ref=f4e105]:
+                    - emphasis [ref=f4e106]: Assignee not available
+            - paragraph [ref=f4e107]:
+              - text: Only
+              - strong [ref=f4e108]: ADM‑1901
+              - text: has an explicit assignee listed; the other issues returned do not have an assignee field in the current data.
+          - generic [ref=f4e110]:
+            - paragraph [ref=f4e111]: "Source (YouTrack): search_issues"
+            - table [ref=f4e113]:
+              - rowgroup [ref=f4e114]:
+                - row [ref=f4e115]:
+                  - columnheader "id" [ref=f4e116]
+                  - columnheader "url" [ref=f4e117]
+                  - columnheader "summary" [ref=f4e118]
+                  - columnheader "project" [ref=f4e119]
+                  - columnheader "reporter" [ref=f4e120]
+                  - columnheader "resolvedAt" [ref=f4e121]
+                  - columnheader "createdAt" [ref=f4e122]
+                  - columnheader "updatedAt" [ref=f4e123]
+                  - columnheader "Assignee" [ref=f4e124]
+              - rowgroup [ref=f4e125]:
+                - row [ref=f4e126]:
+                  - cell "ADM-1901" [ref=f4e127]
+                  - cell [ref=f4e128]:
+                    - link "Open ↗" [ref=f4e129] [cursor=pointer]:
+                      - /url: https://admarentech.myjetbrains.com/youtrack/issue/ADM-1901
+                  - cell "[CargoParse] AI Assist Incorrectly Applies Invalid Cargo Subtypes and Changes the Cargo Type" [ref=f4e130]
+                  - cell "ADM" [ref=f4e131]
+                  - cell "Ananthu" [ref=f4e132]
+                  - cell [ref=f4e133]
+                  - cell "2026-08-21 14:49:17" [ref=f4e134]
+                  - cell "2026-09-07 10:15:12" [ref=f4e135]
+                  - cell "reshma.kr" [ref=f4e136]
+                - row [ref=f4e137]:
+                  - cell "ADM-1933" [ref=f4e138]
+                  - cell [ref=f4e139]:
+                    - link "Open ↗" [ref=f4e140] [cursor=pointer]:
+                      - /url: https://admarentech.myjetbrains.com/youtrack/issue/ADM-1933
+                  - cell "[CargoParse] Long Text and Numeric Values Overflow Cells in Roughsheet and Master Table" [ref=f4e141]
+                  - cell "ADM" [ref=f4e142]
+                  - cell "nayana.chandran" [ref=f4e143]
+                  - cell [ref=f4e144]
+                  - cell "2026-09-03 12:26:28" [ref=f4e145]
+                  - cell "2026-09-07 10:02:28" [ref=f4e146]
+                  - cell [ref=f4e147]
+                - row [ref=f4e148]:
+                  - cell "ADM-1918" [ref=f4e149]
+                  - cell [ref=f4e150]:
+                    - link "Open ↗" [ref=f4e151] [cursor=pointer]:
+                      - /url: https://admarentech.myjetbrains.com/youtrack/issue/ADM-1918
+                  - cell "[Cargo Parse] Invalid Cargo Subtype Data Is Mapped and Added to the Master Table" [ref=f4e152]
+                  - cell "ADM" [ref=f4e153]
+                  - cell "Ananthu" [ref=f4e154]
+                  - cell [ref=f4e155]
+                  - cell "2026-09-01 17:07:42" [ref=f4e156]
+                  - cell "2026-09-07 09:40:58" [ref=f4e157]
+                  - cell [ref=f4e158]
+                - row [ref=f4e159]:
+                  - cell "ADM-1948" [ref=f4e160]
+                  - cell [ref=f4e161]:
+                    - link "Open ↗" [ref=f4e162] [cursor=pointer]:
+                      - /url: https://admarentech.myjetbrains.com/youtrack/issue/ADM-1948
+                  - cell "[CargoParse] Incorrect Validation After Remapping Cargo Type Column" [ref=f4e163]
+                  - cell "ADM" [ref=f4e164]
+                  - cell "nayana.chandran" [ref=f4e165]
+                  - cell [ref=f4e166]
+                  - cell "2026-09-04 16:47:52" [ref=f4e167]
+                  - cell "2026-09-04 16:47:52" [ref=f4e168]
+                  - cell [ref=f4e169]
+                - row [ref=f4e170]:
+                  - cell "ADM-1947" [ref=f4e171]
+                  - cell [ref=f4e172]:
+                    - link "Open ↗" [ref=f4e173] [cursor=pointer]:
+                      - /url: https://admarentech.myjetbrains.com/youtrack/issue/ADM-1947
+                  - cell "[CargoParse] Invalid Item Volume Data Is Added to the Master Table Without Validation" [ref=f4e174]
+                  - cell "ADM" [ref=f4e175]
+                  - cell "Ananthu" [ref=f4e176]
+                  - cell [ref=f4e177]
+                  - cell "2026-09-04 15:52:48" [ref=f4e178]
+                  - cell "2026-09-04 15:53:14" [ref=f4e179]
+                  - cell [ref=f4e180]
+      - generic [ref=f4e49]:
+        - textbox "Ask about issues, sprints, or projects…" [ref=f4e50]
+        - button "Ask" [disabled]
+  - button "Open Next.js Dev Tools" [ref=f4e56] [cursor=pointer]
+  - alert [ref=f4e60]

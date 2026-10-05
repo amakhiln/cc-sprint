@@ -1,0 +1,30 @@
+- generic [active] [ref=f1e1]:
+  - navigation [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - generic [ref=f1e4]: Sprint & Velocity
+      - link "Sprint Plan" [ref=f1e6] [cursor=pointer]:
+        - /url: /
+      - link "Roster" [ref=f1e12] [cursor=pointer]:
+        - /url: /roster
+      - link "Backlog" [ref=f1e18] [cursor=pointer]:
+        - /url: /sprint
+      - link "Leave & Holidays" [ref=f1e22] [cursor=pointer]:
+        - /url: /leave
+      - link "Velocity History" [ref=f1e27] [cursor=pointer]:
+        - /url: /velocity-history
+      - link "Assistant" [ref=f1e31] [cursor=pointer]:
+        - /url: /assistant
+      - link "Settings" [ref=f1e34] [cursor=pointer]:
+        - /url: /settings
+      - button "Search ⌘K" [ref=f1e38] [cursor=pointer]:
+        - text: Search
+        - generic [ref=f1e42]: ⌘K
+  - generic [ref=f1e43]:
+    - heading "Assistant" [level=1] [ref=f1e45]
+    - generic [ref=f1e46]:
+      - paragraph [ref=f1e48]: Ask a question about your YouTrack project data.
+      - generic [ref=f1e49]:
+        - textbox "Ask about issues, sprints, or projects…" [ref=f1e50]
+        - button "Ask" [disabled]
+  - button "Open Next.js Dev Tools" [ref=f1e56] [cursor=pointer]
+  - alert [ref=f1e60]

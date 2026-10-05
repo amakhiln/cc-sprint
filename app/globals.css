@@ -1,0 +1,413 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-body);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* Aurora Light rounded scale (DESIGN.md `rounded`) — fixed px values, not a
+     single-var multiplier chain, since sm/md/lg/xl aren't a linear ratio. */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Aurora Light design tokens (DESIGN.md `colors`) */
+  --surface-base: #FBF7F2;
+  --surface-glass: rgba(255, 255, 255, 0.55);
+  --surface-glass-strong: rgba(255, 255, 255, 0.7);
+  --border-glass: rgba(255, 255, 255, 0.9);
+  --ink-primary: #34302C;
+  /* Darkened from the DESIGN.md-documented #8A8177 -- that value measured
+     ~3.4:1 against the glass panels it sits on, under WCAG AA's 4.5:1 body
+     text minimum. #706960 keeps the same warm-taupe hue while landing
+     ~5:1. PM-approved deviation from the spec'd hex; DESIGN.md updated to
+     match. */
+  --ink-muted: #706960;
+  --accent-peach: #FF8B6B;
+  --accent-lilac: #8E7CFF;
+  --accent-mint: #3FBF95;
+  --accent-gold: #F2C879;
+  --signal-warning: #E0575C;
+
+  /* "Modern Technical" typography (supersedes DESIGN.md `typography`'s
+     original General Sans + Satoshi, 2026-08-24) — Space Grotesk + IBM
+     Plex Sans, loaded via Google Fonts <link> in app/layout.tsx, with
+     system fallbacks. */
+  --font-display: "Space Grotesk", "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius: 16px;
+
+  /* shadcn semantic vars remapped to Aurora Light, replacing the grayscale
+     OKLCH defaults */
+  --background: var(--surface-base);
+  --foreground: var(--ink-primary);
+  --card: var(--surface-glass);
+  --card-foreground: var(--ink-primary);
+  --popover: var(--surface-glass-strong);
+  --popover-foreground: var(--ink-primary);
+  --primary: var(--accent-peach);
+  --primary-foreground: var(--surface-base);
+  --secondary: rgba(138, 129, 119, 0.12);
+  --secondary-foreground: var(--ink-primary);
+  --muted: rgba(138, 129, 119, 0.12);
+  --muted-foreground: var(--ink-muted);
+  --accent: rgba(142, 124, 255, 0.14);
+  --accent-foreground: var(--ink-primary);
+  --destructive: var(--signal-warning);
+  --border: var(--border-glass);
+  --input: var(--border-glass);
+  --ring: var(--accent-peach);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    /* Canvas Mesh (DESIGN.md `components.canvas-mesh`) — soft pastel blobs
+       over the warm off-white base, ported verbatim from the approved
+       mockup (mockups/key-sprint-plan-overview.html) so every glass panel
+       has something to filter. */
+    color: var(--foreground);
+    background:
+      radial-gradient(circle at 10% 15%, rgba(255, 201, 168, 0.65), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(201, 184, 255, 0.55), transparent 42%),
+      radial-gradient(circle at 85% 85%, rgba(155, 232, 206, 0.55), transparent 45%),
+      radial-gradient(circle at 15% 90%, rgba(255, 214, 168, 0.4), transparent 40%),
+      var(--surface-base);
+    background-attachment: fixed;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Glass Panel (DESIGN.md `components.glass-panel`) — the universal
+   container treatment: floating surfaces (dialogs, side panels) use
+   .glass-strong; resting page sections use .glass. Both fall back to an
+   opaque surface when the OS/browser requests reduced transparency. */
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px rgba(160, 130, 100, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-strong {
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 60px rgba(160, 130, 100, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+/* Minimal styling for react-markdown output in the Assistant chat -- just
+   enough for a bulleted/numbered list, bold/code, and paragraph spacing to
+   read correctly; Tailwind's preflight strips list-style/margins by default. */
+.prose-assistant p {
+  white-space: pre-wrap;
+}
+.prose-assistant p + p {
+  margin-top: 0.5em;
+}
+.prose-assistant ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.prose-assistant ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.prose-assistant li + li {
+  margin-top: 0.15em;
+}
+.prose-assistant strong {
+  font-weight: 600;
+}
+.prose-assistant code {
+  background: var(--surface-glass-strong);
+  border-radius: 0.25em;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.prose-assistant pre {
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  padding: 0.75em 1em;
+  overflow-x: auto;
+}
+.prose-assistant pre code {
+  background: none;
+  padding: 0;
+}
+.prose-assistant table {
+  border-collapse: collapse;
+  margin-top: 0.5em;
+  width: 100%;
+}
+.prose-assistant th,
+.prose-assistant td {
+  border: 1px solid var(--border-glass);
+  padding: 0.35em 0.6em;
+  text-align: left;
+}
+.prose-assistant th {
+  font-weight: 600;
+}
+.prose-assistant a {
+  color: var(--accent-mint);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* Assistant "thinking" dots -- conveys a pending answer. Static (still
+   visible, just not pulsing) when reduced motion is requested. */
+.assistant-typing {
+  display: inline-flex;
+  gap: 3px;
+}
+.assistant-typing span {
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--accent-peach);
+  opacity: 0.5;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .assistant-typing span {
+    animation: assistant-typing 1.1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+  .assistant-typing span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .assistant-typing span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes assistant-typing {
+  0%, 60%, 100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Lighter-weight resting glass for nested rows/list items (roster rows,
+   category rows) — translucent + bordered like the mockup's .roster-card,
+   relying on an ancestor .glass panel for the actual blur rather than
+   stacking backdrop-filter on every row. */
+.glass-row {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.45);
+  /* Living Glass spotlight -- an off-canvas default center so the gradient
+     is fully transparent until components/spotlight-cards.tsx sets real
+     --spot-x/--spot-y on pointer-over. Layered as the element's own
+     background (not a pseudo-element) so it paints behind real content
+     with zero z-index bookkeeping. */
+  background-image: radial-gradient(180px circle at var(--spot-x, -999px) var(--spot-y, -999px), rgba(255, 232, 217, 0.95), transparent 70%);
+  background-repeat: no-repeat;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .glass-row {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-row:hover {
+    box-shadow: 0 16px 40px rgba(160, 130, 100, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: var(--surface-base);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 8px 24px rgba(52, 48, 44, 0.1);
+  }
+  .glass-row {
+    background: var(--surface-base);
+    border-color: var(--border);
+  }
+}
+
+/* Capacity Ledger fill-in (Aurora Light motion) -- a transform (not width)
+   animation so the layout is stable from first paint; the inline `width`
+   style already holds the final value, this only reveals it via scaleX. */
+@media (prefers-reduced-motion: no-preference) {
+  .capacity-fill-in {
+    transform-origin: left;
+    animation: capacity-fill 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Capacity Gauge fill-in -- @starting-style, not JS: the circle's real
+   stroke-dashoffset (components/capacity-gauge.tsx, server-rendered) is
+   always correct; this only overrides its very first paint so the
+   transition below has something to animate from. Circumference is fixed
+   (132px gauge, 12px stroke -- see the component), so 377px is a
+   constant, not a magic number tied to any particular capacity value. */
+@media (prefers-reduced-motion: no-preference) {
+  .capacity-gauge-fill {
+    transition: stroke-dashoffset 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @starting-style {
+    .capacity-gauge-fill {
+      stroke-dashoffset: 377px;
+    }
+  }
+}
+
+@keyframes capacity-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Sprint Close checkmark draw -- default state is fully drawn (dashoffset
+   0) so reduced-motion and any non-JS render show a complete checkmark,
+   never a hidden one; only the no-preference branch starts hidden and
+   animates in. See capacity-fill-in above for the same "safe default"
+   shape. */
+.checkmark-circle,
+.checkmark-check {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .checkmark-circle {
+    stroke-dashoffset: 151;
+    animation: checkmark-draw 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .checkmark-check {
+    stroke-dashoffset: 36;
+    animation: checkmark-draw 350ms cubic-bezier(0.16, 1, 0.3, 1) 450ms forwards;
+  }
+}
+
+@keyframes checkmark-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Sprint Close confetti -- components/confetti-burst.tsx sets --dx/--dy
+   (precomputed in JS, not CSS trig, for broad browser support) per piece. */
+.confetti-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  animation: confetti-piece 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes confetti-piece {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(300deg) scale(0.4);
+    opacity: 0;
+  }
+}

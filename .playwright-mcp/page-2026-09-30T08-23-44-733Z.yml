@@ -1,0 +1,161 @@
+- generic:
+  - navigation [aria-hidden]:
+    - generic:
+      - generic: Sprint & Velocity
+      - link:
+        - /url: /
+        - text: Sprint Plan
+      - link:
+        - /url: /roster
+        - text: Roster
+      - link:
+        - /url: /sprint
+        - text: Backlog
+      - link:
+        - /url: /leave
+        - text: Leave & Holidays
+      - link:
+        - /url: /velocity-history
+        - text: Velocity History
+      - link:
+        - /url: /assistant
+        - text: Assistant
+      - link:
+        - /url: /settings
+        - text: Settings
+      - button:
+        - text: Search
+        - generic: ⌘K
+  - generic [aria-hidden]:
+    - generic:
+      - heading [level=1]: Backlog
+      - button [expanded]: Browse Backlog
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: Sprint active
+          - paragraph: Oct 1, 2026 – Oct 14, 2026
+      - generic:
+        - generic:
+          - paragraph: "0"
+          - paragraph: Issues pulled
+        - link:
+          - /url: /
+          - text: Sprint Plan
+  - button "Open Next.js Dev Tools" [ref=e76] [cursor=pointer]
+  - alert
+  - dialog [ref=e81]:
+    - generic [ref=e82]:
+      - heading "Backlog" [level=2] [ref=e83]
+      - paragraph [ref=e84]: Select issues and confirm an hours estimate to pull them into the active Sprint.
+    - generic [ref=e85]:
+      - paragraph [ref=e86]: Showing the first 500 open issues — there may be more.
+      - searchbox "Search backlog" [ref=e87]
+      - tablist "Filter by type" [ref=e88]:
+        - tab "All" [ref=e89] [cursor=pointer]
+        - tab "Bug" [ref=e90] [cursor=pointer]
+        - tab "Epic" [active] [selected] [ref=e91] [cursor=pointer]
+        - tab "Improvement" [ref=e92] [cursor=pointer]
+        - tab "Meetings" [ref=e93] [cursor=pointer]
+        - tab "Story" [ref=e94] [cursor=pointer]
+        - tab "Sub-task" [ref=e95] [cursor=pointer]
+        - tab "Task" [ref=e96] [cursor=pointer]
+      - list [ref=e97]:
+        - listitem [ref=e482]:
+          - generic [ref=e483]:
+            - checkbox "Select SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)" [ref=e484] [cursor=pointer]
+            - generic [ref=e485]:
+              - generic [ref=e486]: SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)
+              - generic [ref=e487]: ADM-2151
+          - generic [ref=e488]:
+            - generic [ref=e489]: Epic · Unassigned
+            - generic [ref=e490]:
+              - generic [ref=e491]: Est.
+              - spinbutton "Estimate hours for SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)" [ref=e492]
+              - generic [ref=e493]: h
+        - listitem [ref=e494]:
+          - generic [ref=e495]:
+            - 'checkbox "Select Super Admin Console — Epic 3: Invitations & Org Admin Self-Service" [ref=e496] [cursor=pointer]'
+            - generic [ref=e497]:
+              - generic [ref=e498]: "Super Admin Console — Epic 3: Invitations & Org Admin Self-Service"
+              - generic [ref=e499]: ADM-2106
+          - generic [ref=e500]:
+            - generic [ref=e501]: Epic · Unassigned
+            - generic [ref=e502]:
+              - generic [ref=e503]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 3: Invitations & Org Admin Self-Service" [ref=e504]'
+              - generic [ref=e505]: h
+        - listitem [ref=e590]:
+          - generic [ref=e591]:
+            - 'checkbox "Select Super Admin Console — Epic 4: Platform Super Admin Console & Moderation" [ref=e592] [cursor=pointer]'
+            - generic [ref=e593]:
+              - generic [ref=e594]: "Super Admin Console — Epic 4: Platform Super Admin Console & Moderation"
+              - generic [ref=e595]: ADM-2115
+          - generic [ref=e596]:
+            - generic [ref=e597]: Epic · Unassigned
+            - generic [ref=e598]:
+              - generic [ref=e599]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 4: Platform Super Admin Console & Moderation" [ref=e600]'
+              - generic [ref=e601]: h
+        - listitem [ref=e806]:
+          - generic [ref=e807]:
+            - 'checkbox "Select Super Admin Console — Epic 6: Company Name → Organization Migration" [ref=e808] [cursor=pointer]'
+            - generic [ref=e809]:
+              - generic [ref=e810]: "Super Admin Console — Epic 6: Company Name → Organization Migration"
+              - generic [ref=e811]: ADM-2130
+          - generic [ref=e812]:
+            - generic [ref=e813]: Epic · Unassigned
+            - generic [ref=e814]:
+              - generic [ref=e815]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 6: Company Name → Organization Migration" [ref=e816]'
+              - generic [ref=e817]: h
+        - listitem [ref=e818]:
+          - generic [ref=e819]:
+            - 'checkbox "Select Super Admin Console — Epic 5: Account Lifecycle & Organization Deletion" [ref=e820] [cursor=pointer]'
+            - generic [ref=e821]:
+              - generic [ref=e822]: "Super Admin Console — Epic 5: Account Lifecycle & Organization Deletion"
+              - generic [ref=e823]: ADM-2122
+          - generic [ref=e824]:
+            - generic [ref=e825]: Epic · Unassigned
+            - generic [ref=e826]:
+              - generic [ref=e827]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 5: Account Lifecycle & Organization Deletion" [ref=e828]'
+              - generic [ref=e829]: h
+        - listitem [ref=e830]:
+          - generic [ref=e831]:
+            - 'checkbox "Select Super Admin Console — Epic 2: Signup, Entry & Org Switching" [ref=e832] [cursor=pointer]'
+            - generic [ref=e833]:
+              - generic [ref=e834]: "Super Admin Console — Epic 2: Signup, Entry & Org Switching"
+              - generic [ref=e835]: ADM-2096
+          - generic [ref=e836]:
+            - generic [ref=e837]: Epic · Unassigned
+            - generic [ref=e838]:
+              - generic [ref=e839]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 2: Signup, Entry & Org Switching" [ref=e840]'
+              - generic [ref=e841]: h
+        - listitem [ref=e842]:
+          - generic [ref=e843]:
+            - 'checkbox "Select Super Admin Console — Epic 1: Organization Creation & Identity Foundation" [ref=e844] [cursor=pointer]'
+            - generic [ref=e845]:
+              - generic [ref=e846]: "Super Admin Console — Epic 1: Organization Creation & Identity Foundation"
+              - generic [ref=e847]: ADM-2088
+          - generic [ref=e848]:
+            - generic [ref=e849]: Epic · Unassigned
+            - generic [ref=e850]:
+              - generic [ref=e851]: Est.
+              - 'spinbutton "Estimate hours for Super Admin Console — Epic 1: Organization Creation & Identity Foundation" [ref=e852]'
+              - generic [ref=e853]: h
+        - listitem [ref=e2786]:
+          - generic [ref=e2787]:
+            - checkbox "Select QA Knowledge Transfer" [ref=e2788] [cursor=pointer]
+            - generic [ref=e2789]:
+              - generic [ref=e2790]: QA Knowledge Transfer
+              - generic [ref=e2791]: ADM-1468
+          - generic [ref=e2792]:
+            - generic [ref=e2793]: Epic · Unassigned
+            - generic [ref=e2794]:
+              - generic [ref=e2795]: Est.
+              - spinbutton "Estimate hours for QA Knowledge Transfer" [ref=e2796]
+              - generic [ref=e2797]: h
+      - button "Pull Selected (0)" [disabled]
+    - button "Close" [ref=e6098] [cursor=pointer]

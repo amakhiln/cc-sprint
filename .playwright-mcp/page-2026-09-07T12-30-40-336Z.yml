@@ -1,0 +1,286 @@
+- generic:
+  - navigation [aria-hidden]:
+    - generic:
+      - generic: Sprint & Velocity
+      - link:
+        - /url: /
+        - text: Sprint Plan
+      - link:
+        - /url: /roster
+        - text: Roster
+      - link:
+        - /url: /sprint
+        - text: Backlog
+      - link:
+        - /url: /leave
+        - text: Leave & Holidays
+      - link:
+        - /url: /velocity-history
+        - text: Velocity History
+      - link:
+        - /url: /assistant
+        - text: Assistant
+      - link:
+        - /url: /settings
+        - text: Settings
+      - button:
+        - text: Search
+        - generic: ⌘K
+  - generic [aria-hidden]:
+    - generic:
+      - generic:
+        - heading [level=1]: Sprint Plan
+        - generic: Day 14 of 14 · Aug 20, 2026 – Sep 2, 2026
+      - generic:
+        - link:
+          - /url: /share/0580b7f0-72a3-4209-9bfc-c0c055e56a95
+          - text: Team View
+        - button [expanded]: Close Sprint
+    - generic:
+      - heading [level=2]: Sprint Capacity
+      - generic:
+        - generic:
+          - progressbar:
+            - generic:
+              - generic: 348.3h
+              - generic: of 657h
+          - generic:
+            - generic:
+              - generic: 81.0h
+              - generic: Assigned
+        - generic:
+          - generic: Team Breakdown
+          - generic:
+            - generic:
+              - generic: Development
+              - generic: 348.3h
+            - generic:
+              - generic: DevOps
+              - generic: 9.0h
+            - generic:
+              - generic: Management
+              - generic: 20.7h
+    - generic:
+      - heading [level=2]: Roster
+      - list:
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: A
+            - generic:
+              - paragraph: Ananthu
+              - paragraph: 9h/day
+          - generic:
+            - generic: 63.0h
+            - progressbar
+            - generic: "Assigned: 18.0h"
+            - group:
+              - generic: Breakdown for Ananthu
+          - generic:
+            - generic: Development 100%
+            - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: C
+            - generic:
+              - paragraph: Chanchel
+              - paragraph: 9h/day
+          - generic:
+            - generic: 45.0h
+            - progressbar
+            - generic: "Assigned: 0.0h"
+            - group:
+              - generic: Breakdown for Chanchel
+          - generic:
+            - generic: Development 100%
+            - generic:
+              - generic: Planned Leave
+              - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: G
+            - generic:
+              - paragraph: Gokul
+              - paragraph: 9h/day
+          - generic:
+            - generic: 54.0h
+            - progressbar
+            - generic: "Assigned: 0.0h"
+            - group:
+              - generic: Breakdown for Gokul
+          - generic:
+            - generic: Development 100%
+            - generic:
+              - generic: Emergency Leave
+              - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: H
+            - generic:
+              - paragraph: Hari
+              - paragraph: 9h/day
+          - generic:
+            - generic: 31.5h
+            - progressbar
+            - generic:
+              - generic: "Assigned: 36.0h"
+              - generic: Over-allocated
+            - group:
+              - generic: Breakdown for Hari
+          - generic:
+            - generic:
+              - generic: Development 70%
+              - generic: DevOps 20%
+              - generic: Management 10%
+            - generic:
+              - generic: Planned Leave
+              - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: J
+            - generic:
+              - paragraph: Jyothish
+              - paragraph: 9h/day
+          - generic:
+            - generic: 36.0h
+            - progressbar
+            - generic: "Assigned: 0.0h"
+            - group:
+              - generic: Breakdown for Jyothish
+          - generic:
+            - generic:
+              - generic: Development 80%
+              - generic: Management 20%
+            - generic:
+              - generic: Planned Leave
+              - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: "N"
+            - generic:
+              - paragraph: Nayana
+              - paragraph: 9h/day
+          - generic:
+            - generic: 28.8h
+            - progressbar
+            - generic: "Assigned: 27.0h"
+            - group:
+              - generic: Breakdown for Nayana
+          - generic:
+            - generic:
+              - generic: Development 80%
+              - generic: Management 20%
+            - generic:
+              - generic: Planned Leave
+              - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: R
+            - generic:
+              - paragraph: Reshma
+              - paragraph: 9h/day
+          - generic:
+            - generic: 63.0h
+            - progressbar
+            - generic: "Assigned: 0.0h"
+            - group:
+              - generic: Breakdown for Reshma
+          - generic:
+            - generic: Development 100%
+            - generic: Holiday
+        - listitem:
+          - generic:
+            - generic [aria-hidden]: R
+            - generic:
+              - paragraph: Robin
+              - paragraph: 9h/day
+          - generic:
+            - generic: 27.0h
+            - progressbar
+            - generic: "Assigned: 0.0h"
+            - group:
+              - generic: Breakdown for Robin
+          - generic:
+            - generic: Development 100%
+            - generic:
+              - generic: Planned Leave
+              - generic: Holiday
+    - generic:
+      - heading [level=2]: Assigned Backlog Issues
+      - list:
+        - listitem:
+          - button:
+            - paragraph: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+            - generic:
+              - generic:
+                - generic [aria-hidden]: A
+                - generic: Ananthu
+              - generic: 18.0h
+        - listitem:
+          - button:
+            - paragraph: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+            - generic:
+              - generic:
+                - generic [aria-hidden]: "N"
+                - generic: Nayana
+              - generic: 18.0h
+        - listitem:
+          - button:
+            - paragraph: LLM Token limit per user schema and services
+            - generic:
+              - generic:
+                - generic [aria-hidden]: H
+                - generic: Hari
+              - generic: 18.0h
+        - listitem:
+          - button:
+            - paragraph: bulk ingest batching, extraction pipeline hardening, retry policy
+            - generic:
+              - generic:
+                - generic [aria-hidden]: H
+                - generic: Hari
+              - generic: 18.0h
+        - listitem:
+          - button:
+            - paragraph: "QA - Manual Testing of ADM- 1850: Grouping Feature"
+            - generic:
+              - generic:
+                - generic [aria-hidden]: "N"
+                - generic: Nayana
+              - generic: 9.0h
+  - button "Open Next.js Dev Tools" [ref=f1e340] [cursor=pointer]
+  - alert
+  - dialog [ref=f1e345]:
+    - generic [ref=f1e346]:
+      - heading "Close Sprint" [level=2] [ref=f1e347]
+      - paragraph [ref=f1e348]: Review each assigned issue's logged hours before confirming. Closing locks these figures into Velocity History and makes the Sprint read-only.
+    - list [ref=f1e349]:
+      - listitem [ref=f1e350]:
+        - generic [ref=f1e351]:
+          - paragraph [ref=f1e352]: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+          - paragraph [ref=f1e353]: 18.0h logged
+        - spinbutton [ref=f1e354]: "18"
+      - listitem [ref=f1e355]:
+        - generic [ref=f1e356]:
+          - paragraph [ref=f1e357]: "QA - Manual Testing of ADM -1860: Bulk Upload in AI - Assist"
+          - paragraph [ref=f1e358]: 18.0h logged
+        - spinbutton [ref=f1e359]: "18"
+      - listitem [ref=f1e360]:
+        - generic [ref=f1e361]:
+          - paragraph [ref=f1e362]: LLM Token limit per user schema and services
+          - paragraph [ref=f1e363]: 15.6h logged
+        - spinbutton [ref=f1e364]: "15.58"
+      - listitem [ref=f1e365]:
+        - generic [ref=f1e366]:
+          - paragraph [ref=f1e367]: bulk ingest batching, extraction pipeline hardening, retry policy
+          - paragraph [ref=f1e368]: 19.0h logged
+        - spinbutton [ref=f1e369]: "19"
+      - listitem [ref=f1e370]:
+        - generic [ref=f1e371]:
+          - paragraph [ref=f1e372]: "QA - Manual Testing of ADM- 1850: Grouping Feature"
+          - paragraph [ref=f1e373]: 9.0h logged
+        - spinbutton [ref=f1e374]: "9"
+    - generic [ref=f1e375]:
+      - generic [ref=f1e376]: Total
+      - generic [ref=f1e377]: 79.6h
+    - button "Confirm and close" [ref=f1e379] [cursor=pointer]
+    - button "Close" [active] [ref=f1e380] [cursor=pointer]

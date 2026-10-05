@@ -1,0 +1,335 @@
+<!--
+  DIRECTION: Midnight Glass
+  RATIONALE: A moody, after-hours "mission control" register for PMs who live in this
+  screen all day. Deep space-navy canvas with saturated violet/cyan gradient blobs gives
+  real depth for frosted glass to sit on top of, and heavy blur plus glowing borders make
+  the capacity ring feel like the instrument panel of the sprint. Cabinet Grotesk's
+  condensed, slightly industrial display character reads confident and technical for
+  numbers/headlines, while Supreme stays quiet, warm and legible for dense table data, a
+  pairing built for data-forward, dark glass UI that skips the usual default faces.
+  FONT PAIRING: Cabinet Grotesk (display/headings) + Supreme (body/data)
+  PALETTE:
+    background base   #0B0E1D -> #150B2B (mesh gradient)
+    blob accent 1      #6E56F7 (violet)
+    blob accent 2      #22D3EE (cyan)
+    blob accent 3      #F472B6 (pink, sparse)
+    glass fill         rgba(255,255,255,0.06)
+    glass border       rgba(255,255,255,0.14)
+    text primary       #F4F3FB
+    text muted         #A6A4C4
+    accent / positive  #4CE0D2
+    warning            #FB7185
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sprint &amp; Velocity Planner — Midnight Glass</title>
+<style>
+  :root{
+    --accent:#4CE0D2;
+    --accent-2:#6E56F7;
+    --warn:#FB7185;
+    --text:#F4F3FB;
+    --text-muted:#A6A4C4;
+    --glass:rgba(255,255,255,0.06);
+    --glass-strong:rgba(255,255,255,0.10);
+    --border:rgba(255,255,255,0.14);
+    --border-hi:rgba(255,255,255,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Supreme','Segoe UI',system-ui,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(110,86,247,0.55), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(34,211,238,0.35), transparent 40%),
+      radial-gradient(circle at 75% 80%, rgba(244,114,182,0.25), transparent 45%),
+      radial-gradient(circle at 20% 85%, rgba(76,224,210,0.20), transparent 40%),
+      linear-gradient(160deg,#0B0E1D 0%, #150B2B 60%, #0B0E1D 100%);
+    background-attachment:fixed;
+    padding:32px;
+  }
+  h1,h2,h3,.display{
+    font-family:'Cabinet Grotesk','Supreme',system-ui,sans-serif;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .glass{
+    background:var(--glass);
+    backdrop-filter:blur(22px) saturate(150%);
+    -webkit-backdrop-filter:blur(22px) saturate(150%);
+    border:1px solid var(--border);
+    border-top-color:var(--border-hi);
+    border-radius:20px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .app-shell{max-width:1360px;margin:0 auto;}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 24px;margin-bottom:24px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    box-shadow:0 0 20px rgba(110,86,247,0.6);
+  }
+  .brand .name{font-weight:600;font-size:15px;}
+  .brand .sub{font-size:12px;color:var(--text-muted);}
+  .sprint-pill{
+    padding:8px 16px;border-radius:999px;font-size:13px;color:var(--text-muted);
+  }
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,#F472B6,#6E56F7);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+  }
+  .layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;}
+  .stack{display:flex;flex-direction:column;gap:24px;}
+  .card{padding:26px;}
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;}
+  .card-head h2{font-size:18px;}
+  .card-head .hint{font-size:12px;color:var(--text-muted);}
+
+  /* Capacity ledger */
+  .ledger{display:flex;gap:32px;align-items:center;}
+  .ring-wrap{position:relative;width:176px;height:176px;flex:0 0 auto;}
+  .ring{
+    width:176px;height:176px;border-radius:50%;
+    background:conic-gradient(var(--accent) 0% 93.7%, rgba(255,255,255,0.12) 93.7% 100%);
+    -webkit-mask:radial-gradient(farthest-side, transparent 64%, #000 65%);
+    mask:radial-gradient(farthest-side, transparent 64%, #000 65%);
+    filter:drop-shadow(0 0 14px rgba(76,224,210,0.45));
+  }
+  .ring-label{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+  }
+  .ring-label .num{font-family:'Cabinet Grotesk';font-size:34px;font-weight:600;}
+  .ring-label .unit{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .ledger-stats{flex:1;display:flex;flex-direction:column;gap:14px;}
+  .stat-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);}
+  .stat-row b{color:var(--text);font-weight:600;}
+  .segbar{height:14px;border-radius:8px;overflow:hidden;display:flex;border:1px solid var(--border);}
+  .seg{height:100%;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);}
+  .legend span.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-weight:500;color:var(--text-muted);font-size:11px;
+    text-transform:uppercase;letter-spacing:0.06em;padding:0 10px 10px;
+  }
+  td{padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08);vertical-align:middle;}
+  tr:hover td{background:rgba(255,255,255,0.03);}
+  .member{display:flex;align-items:center;gap:10px;}
+  .member .av{
+    width:30px;height:30px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  }
+  .member .who b{display:block;font-size:13px;}
+  .member .who span{font-size:11px;color:var(--text-muted);}
+  .chip{
+    display:inline-flex;padding:3px 9px;border-radius:999px;font-size:11px;
+    background:rgba(255,255,255,0.08);border:1px solid var(--border);
+  }
+  .chip.warn{background:rgba(251,113,133,0.15);border-color:rgba(251,113,133,0.4);color:#FFB4C0;}
+  .chip.ok{background:rgba(76,224,210,0.12);border-color:rgba(76,224,210,0.35);color:var(--accent);}
+  .bar-cell{display:flex;align-items:center;gap:8px;}
+  .bar-track{width:64px;height:6px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;}
+  .bar-fill{height:100%;background:var(--accent);}
+  .bar-fill.over{background:var(--warn);}
+
+  .items-list{display:flex;flex-direction:column;gap:10px;}
+  .item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .item .title{font-size:13px;font-weight:500;}
+  .item .meta{font-size:11px;color:var(--text-muted);margin-top:3px;}
+  .item .hrs{font-family:'Cabinet Grotesk';font-size:15px;font-weight:600;}
+
+  /* Member detail aside */
+  .detail-name{font-size:19px;font-weight:600;}
+  .detail-role{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .warn-banner{
+    margin-top:14px;padding:10px 12px;border-radius:12px;font-size:12px;
+    background:rgba(251,113,133,0.14);border:1px solid rgba(251,113,133,0.4);color:#FFC2CB;
+  }
+  .field-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin:18px 0 8px;}
+  .hours-row{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.08);}
+  .cat-row{margin-bottom:12px;}
+  .cat-row .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
+  .cat-track{height:8px;border-radius:5px;background:rgba(255,255,255,0.08);overflow:hidden;}
+  .cat-fill{height:100%;border-radius:5px;}
+  .sum-indicator{
+    margin-top:10px;display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;padding:8px 10px;border-radius:10px;
+  }
+  .sum-indicator.ok{background:rgba(76,224,210,0.1);color:var(--accent);}
+  .leave-list{display:flex;flex-direction:column;gap:6px;font-size:12px;}
+  .leave-item{display:flex;justify-content:space-between;color:var(--text-muted);}
+  .leave-item b{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar glass">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <div class="name">Sprint &amp; Velocity Planner</div>
+        <div class="sub">Platform Team</div>
+      </div>
+    </div>
+    <div class="sprint-pill glass">Sprint 24 · Aug 18 – Aug 29, 2026 · 10 working days</div>
+    <div class="avatar">RK</div>
+  </div>
+
+  <div class="layout">
+    <div class="stack">
+
+      <!-- Capacity Ledger -->
+      <section class="card glass">
+        <div class="card-head">
+          <h2>Sprint Capacity</h2>
+          <span class="hint">380h gross · 24h lost to leave</span>
+        </div>
+        <div class="ledger">
+          <div class="ring-wrap">
+            <div class="ring"></div>
+            <div class="ring-label">
+              <div class="num">356h</div>
+              <div class="unit">available</div>
+            </div>
+          </div>
+          <div class="ledger-stats">
+            <div class="stat-row"><span>Team size</span><b>5 people</b></div>
+            <div class="stat-row"><span>Leave / holiday deducted</span><b style="color:var(--warn)">-24h</b></div>
+            <div class="stat-row"><span>Net available capacity</span><b>356h</b></div>
+            <div class="segbar">
+              <div class="seg" style="width:55%;background:#4CE0D2"></div>
+              <div class="seg" style="width:13%;background:#6E56F7"></div>
+              <div class="seg" style="width:22%;background:#22D3EE"></div>
+              <div class="seg" style="width:10%;background:#F472B6"></div>
+            </div>
+            <div class="legend">
+              <span><span class="dot" style="background:#4CE0D2"></span>Dev · 194h</span>
+              <span><span class="dot" style="background:#6E56F7"></span>Management · 46h</span>
+              <span><span class="dot" style="background:#22D3EE"></span>DevOps · 78h</span>
+              <span><span class="dot" style="background:#F472B6"></span>QA · 38h</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Roster -->
+      <section class="card glass">
+        <div class="card-head">
+          <h2>Roster &amp; Allocation</h2>
+          <span class="hint">% of working hours per category</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th><th>Hrs/day</th><th>Dev</th><th>Mgmt</th><th>DevOps</th><th>QA</th>
+              <th>Leave</th><th>Capacity</th><th>Assigned</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="member"><span class="av">PS</span><span class="who"><b>Priya Sharma</b><span>Senior Engineer</span></span></td>
+              <td>8h</td><td>70%</td><td>10%</td><td>20%</td><td>—</td>
+              <td>1 day</td><td>72h</td>
+              <td class="bar-cell">58h <div class="bar-track"><div class="bar-fill" style="width:81%"></div></div></td>
+              <td><span class="chip ok">On track</span></td>
+            </tr>
+            <tr>
+              <td class="member"><span class="av">MW</span><span class="who"><b>Marcus Webb</b><span>Engineer</span></span></td>
+              <td>8h</td><td>90%</td><td>—</td><td>—</td><td>10%</td>
+              <td>0 days</td><td>80h</td>
+              <td class="bar-cell">74h <div class="bar-track"><div class="bar-fill" style="width:92%"></div></div></td>
+              <td><span class="chip ok">On track</span></td>
+            </tr>
+            <tr>
+              <td class="member"><span class="av">EF</span><span class="who"><b>Elena Fischer</b><span>Engineering Manager</span></span></td>
+              <td>8h</td><td>40%</td><td>60%</td><td>—</td><td>—</td>
+              <td>2 days</td><td>64h</td>
+              <td class="bar-cell">50h <div class="bar-track"><div class="bar-fill" style="width:78%"></div></div></td>
+              <td><span class="chip ok">On track</span></td>
+            </tr>
+            <tr>
+              <td class="member"><span class="av">TO</span><span class="who"><b>Tom Okafor</b><span>DevOps Engineer</span></span></td>
+              <td>8h</td><td>20%</td><td>—</td><td>80%</td><td>—</td>
+              <td>0 days</td><td>80h</td>
+              <td class="bar-cell">76h <div class="bar-track"><div class="bar-fill" style="width:95%"></div></div></td>
+              <td><span class="chip ok">On track</span></td>
+            </tr>
+            <tr>
+              <td class="member"><span class="av">SR</span><span class="who"><b>Sofia Ricci</b><span>Engineer (0.75 FTE)</span></span></td>
+              <td>6h</td><td>50%</td><td>—</td><td>—</td><td>50%</td>
+              <td>0 days</td><td>60h</td>
+              <td class="bar-cell">78h <div class="bar-track"><div class="bar-fill over" style="width:100%"></div></div></td>
+              <td><span class="chip warn">+18h over</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Work items -->
+      <section class="card glass">
+        <div class="card-head">
+          <h2>Assigned Work Items</h2>
+          <span class="hint">232h estimated across 9 items</span>
+        </div>
+        <div class="items-list">
+          <div class="item"><div><div class="title">Checkout payment-retry flow</div><div class="meta">Dev · Priya Sharma, Sofia Ricci</div></div><div class="hrs">40h</div></div>
+          <div class="item"><div><div class="title">Sprint board real-time sync</div><div class="meta">Dev · Marcus Webb</div></div><div class="hrs">32h</div></div>
+          <div class="item"><div><div class="title">Onboarding flow redesign</div><div class="meta">Dev · Sofia Ricci</div></div><div class="hrs">30h</div></div>
+          <div class="item"><div><div class="title">OAuth SSO migration</div><div class="meta">Dev · Marcus Webb, Priya Sharma</div></div><div class="hrs">24h</div></div>
+          <div class="item"><div><div class="title">K8s cluster autoscaling policy</div><div class="meta">DevOps · Tom Okafor</div></div><div class="hrs">28h</div></div>
+          <div class="item"><div><div class="title">Release pipeline hardening</div><div class="meta">DevOps · Tom Okafor</div></div><div class="hrs">20h</div></div>
+          <div class="item"><div><div class="title">Regression suite — checkout</div><div class="meta">QA · Sofia Ricci, Marcus Webb</div></div><div class="hrs">18h</div></div>
+          <div class="item"><div><div class="title">Sprint ceremonies &amp; 1:1s</div><div class="meta">Management · Elena Fischer, Priya Sharma</div></div><div class="hrs">20h</div></div>
+          <div class="item"><div><div class="title">Q4 roadmap planning</div><div class="meta">Management · Elena Fischer</div></div><div class="hrs">20h</div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Team Member Detail -->
+    <aside class="card glass" style="position:sticky;top:24px;">
+      <div class="detail-name">Sofia Ricci</div>
+      <div class="detail-role">Engineer · 0.75 FTE · 6h/day</div>
+      <div class="warn-banner">⚠ Over-allocated by 18h — assigned 78h against 60h capacity this sprint.</div>
+
+      <div class="field-label">Working Hours</div>
+      <div class="hours-row"><span>Hours / day</span><b>6h</b></div>
+      <div class="hours-row"><span>Sprint working days</span><b>10 days</b></div>
+      <div class="hours-row"><span>Leave taken</span><b>0 days</b></div>
+      <div class="hours-row"><span>Computed capacity</span><b>60h</b></div>
+
+      <div class="field-label">Category Allocation</div>
+      <div class="cat-row">
+        <div class="top"><span>Dev</span><span>50%</span></div>
+        <div class="cat-track"><div class="cat-fill" style="width:50%;background:#4CE0D2"></div></div>
+      </div>
+      <div class="cat-row">
+        <div class="top"><span>QA</span><span>50%</span></div>
+        <div class="cat-track"><div class="cat-fill" style="width:50%;background:#F472B6"></div></div>
+      </div>
+      <div class="sum-indicator ok"><span>Running total</span><b>100% ✓</b></div>
+
+      <div class="field-label">Leave &amp; Holidays</div>
+      <div class="leave-list">
+        <div class="leave-item"><span>No leave scheduled this sprint</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+- generic:
+  - navigation [aria-hidden]:
+    - generic:
+      - generic: Sprint & Velocity
+      - link:
+        - /url: /
+        - text: Sprint Plan
+      - link:
+        - /url: /roster
+        - text: Roster
+      - link:
+        - /url: /sprint
+        - text: Backlog
+      - link:
+        - /url: /leave
+        - text: Leave & Holidays
+      - link:
+        - /url: /velocity-history
+        - text: Velocity History
+      - link:
+        - /url: /assistant
+        - text: Assistant
+      - link:
+        - /url: /settings
+        - text: Settings
+      - button:
+        - text: Search
+        - generic: ⌘K
+  - generic [aria-hidden]:
+    - generic:
+      - heading [level=1]: Backlog
+      - button [expanded]: Browse Backlog
+    - generic:
+      - generic:
+        - generic:
+          - paragraph: Sprint active
+          - paragraph: Oct 1, 2026 – Oct 14, 2026
+      - generic:
+        - generic:
+          - paragraph: "0"
+          - paragraph: Issues pulled
+        - link:
+          - /url: /
+          - text: Sprint Plan
+  - button "Open Next.js Dev Tools" [ref=f2e68] [cursor=pointer]
+  - alert
+  - dialog [ref=f2e81]:
+    - generic [ref=f2e82]:
+      - heading "Backlog" [level=2] [ref=f2e83]
+      - paragraph [ref=f2e84]: Select issues and confirm an hours estimate to pull them into the active Sprint.
+    - generic [ref=f2e85]:
+      - paragraph [ref=f2e86]: Showing the first 500 open issues — there may be more.
+      - searchbox "Search backlog" [ref=f2e87]: ADM-2151
+      - tablist "Filter by type" [ref=f2e88]:
+        - tab "All" [selected] [ref=f2e89] [cursor=pointer]
+        - tab "Bug" [ref=f2e90] [cursor=pointer]
+        - tab "Epic" [ref=f2e91] [cursor=pointer]
+        - tab "Improvement" [ref=f2e92] [cursor=pointer]
+        - tab "Meetings" [ref=f2e93] [cursor=pointer]
+        - tab "Story" [ref=f2e94] [cursor=pointer]
+        - tab "Sub-task" [ref=f2e95] [cursor=pointer]
+        - tab "Task" [ref=f2e96] [cursor=pointer]
+      - list [ref=f2e97]:
+        - listitem [ref=f2e566]:
+          - generic [ref=f2e567]:
+            - checkbox "Select SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)" [ref=f2e568] [cursor=pointer]
+            - generic [ref=f2e569]:
+              - generic [ref=f2e570]: SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)
+              - generic [ref=f2e571]: ADM-2151
+          - generic [ref=f2e572]:
+            - generic [ref=f2e573]: Epic · Unassigned
+            - generic [ref=f2e574]:
+              - generic [ref=f2e575]: Est.
+              - spinbutton "Estimate hours for SecureLoad Account Connection — Epic (CargoCentrum PRD §4.10)" [ref=f2e576]
+              - generic [ref=f2e577]: h
+          - generic [ref=f2e578]:
+            - button "Sub-items (3)" [expanded] [active] [ref=f2e7244] [cursor=pointer]
+            - list [ref=f2e7245]:
+              - listitem [ref=f2e7246]:
+                - generic [ref=f2e7247]:
+                  - generic [ref=f2e7248]: "Story 7.1: Connect your SecureLoad account"
+                  - generic [ref=f2e7249]: ADM-2152
+                - generic [ref=f2e7250]: Task · Backlog · Unassigned
+              - listitem [ref=f2e7252]:
+                - generic [ref=f2e7253]:
+                  - generic [ref=f2e7254]: "Story 7.2: Send a packing list to SecureLoad"
+                  - generic [ref=f2e7255]: ADM-2153
+                - generic [ref=f2e7256]: Task · Backlog · Unassigned
+              - listitem [ref=f2e7258]:
+                - generic [ref=f2e7259]:
+                  - generic [ref=f2e7260]: "Story 7.3: Manage your SecureLoad connection"
+                  - generic [ref=f2e7261]: ADM-2154
+                - generic [ref=f2e7262]: Task · Backlog · Unassigned
+      - button "Pull Selected (0)" [disabled]
+    - button "Close" [ref=f2e7242] [cursor=pointer]
