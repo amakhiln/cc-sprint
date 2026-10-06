@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetFooter,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -210,13 +211,19 @@ export function BacklogDrawer({
     });
   }
 
+  // Every pullable issue: the open list plus any loaded sub-items -- the
+  // latter can be resolved (the open list is #Unresolved only), and those are
+  // pullable too.
+  const issueById = new Map<string, YouTrackIssueSummary>();
+  for (const entry of Object.values(subItems)) {
+    if (entry.status === "loaded") for (const child of entry.items) issueById.set(child.id, child);
+  }
+  if (state.status === "loaded") for (const issue of state.issues) issueById.set(issue.id, issue);
+
   // YouTrack is the only source of estimates -- no local override. A leaf
   // with no YouTrack estimate can't be pulled until one is set there.
-  const estimateById = new Map(
-    state.status === "loaded" ? state.issues.map((issue) => [issue.id, issue.estimateHours] as const) : [],
-  );
   function hasValidEstimate(id: string): boolean {
-    return (estimateById.get(id) ?? 0) > 0;
+    return (issueById.get(id)?.estimateHours ?? 0) > 0;
   }
 
   const selectedValid = Array.from(selected).filter(hasValidEstimate);
@@ -246,9 +253,7 @@ export function BacklogDrawer({
       // Promise.all -- each pull still completes, just sequentially.
       const results = await Promise.all(
         selectedValid.map(async (id) => {
-          const issue = (state as { status: "loaded"; issues: YouTrackIssueSummary[] }).issues.find(
-            (candidate) => candidate.id === id,
-          )!;
+          const issue = issueById.get(id)!;
           const result = await pullBacklogIssueAction({
             sprintId: activeSprintId,
             youtrackIssueId: issue.id,
@@ -267,9 +272,7 @@ export function BacklogDrawer({
       const autoAssignments = await Promise.all(
         results.map(async ({ id, result }) => {
           if (!result.ok || result.data.assigneeId) return null;
-          const issue = (state as { status: "loaded"; issues: YouTrackIssueSummary[] }).issues.find(
-            (candidate) => candidate.id === id,
-          );
+          const issue = issueById.get(id);
           const matchedId = issue ? matchTeamMemberByName(issue.assignee, teamMembers) : null;
           if (!matchedId) return null;
           const assignResult = await assignBacklogIssueAction({ issueId: result.data.id, assigneeId: matchedId });
@@ -550,10 +553,29 @@ export function BacklogDrawer({
                           )}
                           {isExpanded && sub?.status === "loaded" && sub.items.length > 0 && (
                             <ul className="ml-1.5 flex flex-col gap-1.5 border-l border-border pl-3">
-                              {sub.items.map((child) => (
+                              {sub.items.map((child) => {
+                                // Same rules as a top-level row; resolved children included.
+                                const childSelectable =
+                                  !!activeSprintId &&
+                                  !pulledByYoutrackId.has(child.id) &&
+                                  state.rollups[child.id] === undefined;
+                                return (
                                 <li key={child.id} className="flex flex-col gap-0.5">
                                   <div className="flex items-center justify-between gap-3">
-                                    <span className="text-xs font-medium text-foreground">{child.summary}</span>
+                                    <span className="flex items-center gap-2">
+                                      {childSelectable && (
+                                        <input
+                                          type="checkbox"
+                                          checked={selected.has(child.id)}
+                                          disabled={pulling || !hasValidEstimate(child.id)}
+                                          onChange={() => toggleSelected(child.id)}
+                                          aria-label={`Select ${child.summary}`}
+                                          title={hasValidEstimate(child.id) ? undefined : "Set an estimate in YouTrack to pull it"}
+                                          className="size-3.5 cursor-pointer accent-[color:var(--accent-peach)]"
+                                        />
+                                      )}
+                                      <span className="text-xs font-medium text-foreground">{child.summary}</span>
+                                    </span>
                                     <span className="shrink-0 text-xs text-muted-foreground">{child.id}</span>
                                   </div>
                                   <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
@@ -572,8 +594,14 @@ export function BacklogDrawer({
                                       )
                                     )}
                                   </div>
+                                  {pullErrors[child.id] && (
+                                    <p role="alert" className="text-xs text-destructive">
+                                      {pullErrors[child.id]}
+                                    </p>
+                                  )}
                                 </li>
-                              ))}
+                                );
+                              })}
                             </ul>
                           )}
                         </div>
@@ -597,16 +625,21 @@ export function BacklogDrawer({
                   );
                 })}
               </ul>
-              {activeSprintId ? (
-                <Button type="button" disabled={!canPull} onClick={handlePullSelected} className="self-start">
-                  {pulling ? "Pulling…" : `Pull Selected (${selectedValid.length})`}
-                </Button>
-              ) : (
-                <p className="text-sm text-muted-foreground">Create a Sprint to pull issues.</p>
-              )}
             </>
           )}
         </div>
+        {/* Outside the scroll area so it stays visible at any scroll position. */}
+        {state.status === "loaded" && state.issues.length > 0 && (
+          <SheetFooter className="border-t border-border">
+            {activeSprintId ? (
+              <Button type="button" disabled={!canPull} onClick={handlePullSelected} className="self-start">
+                {pulling ? "Pulling…" : `Pull Selected (${selectedValid.length})`}
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">Create a Sprint to pull issues.</p>
+            )}
+          </SheetFooter>
+        )}
       </SheetContent>
     </Sheet>
   );
