@@ -98,3 +98,40 @@ export async function listSubItems(
   }
   return issuesPort.listSubItems(config, parentIssueId);
 }
+
+// Assistant agent -- narrows the open backlog to what's pullable into the
+// active Sprint, the same rule the Backlog Drawer applies: an unresolved
+// leaf (no rollups key) not already pulled. type is any project-defined Type
+// value, matched case-insensitively. estimate "without" means null or <= 0
+// (pullBacklogIssue rejects both).
+export type BacklogFilter = {
+  type?: string;
+  estimate?: "with" | "without" | "any";
+  search?: string;
+};
+
+export function hasPullableEstimate(issue: YouTrackIssueSummary): boolean {
+  return issue.estimateHours !== null && issue.estimateHours > 0;
+}
+
+export function filterBacklogIssues(
+  issues: YouTrackIssueSummary[],
+  rollups: Record<string, number>,
+  pulledIds: ReadonlySet<string>,
+  filter: BacklogFilter = {},
+): YouTrackIssueSummary[] {
+  const type = filter.type?.trim().toLowerCase() || null;
+  const search = filter.search?.trim().toLowerCase() || null;
+  return issues.filter(
+    (issue) =>
+      rollups[issue.id] === undefined &&
+      !pulledIds.has(issue.id) &&
+      (type === null || issue.type?.toLowerCase() === type) &&
+      (filter.estimate === "with"
+        ? hasPullableEstimate(issue)
+        : filter.estimate === "without"
+          ? !hasPullableEstimate(issue)
+          : true) &&
+      (search === null || issue.id.toLowerCase().includes(search) || issue.summary.toLowerCase().includes(search)),
+  );
+}

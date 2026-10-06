@@ -259,6 +259,37 @@ async function main() {
     assert.deepEqual(mapGroqStreamChunk(emptyChunk), []);
   }
 
+  // UI_PASSTHROUGH -- an executor's `ui` emits a ui chunk; the model and the
+  // source chunk only ever see `result`, never the UI payload. A `ui` key
+  // inside `result` (e.g. an MCP payload field) is left alone.
+  {
+    let toolMessage: unknown;
+    let call = 0;
+    const createCompletion: ChatCompletionFn = async function* (_model, messages) {
+      call += 1;
+      if (call > 1) {
+        toolMessage = messages[messages.length - 1];
+        yield { type: "content", delta: "Here they are." };
+        return;
+      }
+      yield { type: "tool_call_delta", index: 0, id: "call_1", name: "show_issue_picker", argumentsDelta: "{}" };
+    };
+    const chunks = await collect(
+      runAssistantTurnWith(createCompletion, {
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "user", content: "hi" }],
+        tools: [{ name: "show_issue_picker", parameters: {} }],
+        executeTool: async () => ({ ok: true, result: { shown: 2, ui: "mcp-field" }, ui: { messages: ["secret"] } }),
+      }),
+    );
+    assert.deepEqual(chunks, [
+      { type: "ui", surface: { messages: ["secret"] } },
+      { type: "source", label: "show_issue_picker", value: JSON.stringify({ shown: 2, ui: "mcp-field" }) },
+      { type: "text", delta: "Here they are." },
+    ]);
+    assert.deepEqual(toolMessage, { role: "tool", tool_call_id: "call_1", content: JSON.stringify({ shown: 2, ui: "mcp-field" }) });
+  }
+
   console.log("query-assistant client.selfcheck: all assertions passed");
 }
 

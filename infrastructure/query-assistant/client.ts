@@ -18,11 +18,14 @@ export type AssistantTool = {
 export type ToolExecutor = (
   name: string,
   args: Record<string, unknown>,
-) => Promise<{ ok: true; result: unknown } | { ok: false; error: string }>;
+) => Promise<{ ok: true; result: unknown; ui?: unknown } | { ok: false; error: string }>;
 
 export type AssistantChunk =
   | { type: "text"; delta: string }
   | { type: "source"; label: string; value: string }
+  // An interactive surface (A2UI messages) for the client to render, from a
+  // tool result's `ui` -- never fed back to the model.
+  | { type: "ui"; surface: unknown }
   | { type: "error"; message: string };
 
 // Model keeps calling tools without ever finishing -> stop and surface a
@@ -143,6 +146,9 @@ export async function* runAssistantTurnWith(
         return;
       }
 
+      if (result.ui != null) {
+        yield { type: "ui", surface: result.ui };
+      }
       yield { type: "source", label: call.name, value: JSON.stringify(result.result) };
       working.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result.result) });
     }

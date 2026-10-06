@@ -40,7 +40,7 @@ export type PullBacklogIssueResult =
   | { ok: true; data: BacklogIssue }
   | { ok: false; error: string };
 
-const ALREADY_PULLED_ERROR = "This issue has already been pulled into this Sprint.";
+export const ALREADY_PULLED_ERROR = "This issue has already been pulled into this Sprint.";
 const SPRINT_NOT_ACTIVE_ERROR = "This Sprint is no longer active.";
 const ASSIGNEE_NOT_FOUND_ERROR = "Selected Team Member no longer exists.";
 

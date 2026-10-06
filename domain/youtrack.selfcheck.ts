@@ -10,6 +10,7 @@
 
 import assert from "node:assert/strict";
 import {
+  filterBacklogIssues,
   listBacklogIssues,
   type YouTrackConfig,
   type YouTrackConfigRepo,
@@ -88,6 +89,35 @@ async function main() {
     assert.equal(result.ok, true, "a configured connection with a successful port should succeed");
     assert.ok(result.ok);
     assert.deepEqual(result.data, issues, "issues with null optional fields should pass through unchanged");
+  }
+
+  // FILTER_BACKLOG -- type is case-insensitive, parents (rollups key) and
+  // already-pulled issues are never offered, null and 0 estimates both count
+  // as "without", search matches id or summary.
+  {
+    const mk = (id: string, type: string | null, estimateHours: number | null, summary = `Issue ${id}`) => ({
+      id, summary, type, estimateHours, assignee: null, priority: null, state: null,
+    });
+    const issues = [
+      mk("P-1", "Sub-task", 3),
+      mk("P-2", "sub-task", null),
+      mk("P-3", "Sub-task", 0),
+      mk("P-4", "Task", 5, "Login page"),
+      mk("P-5", "Sub-task", 2), // parent
+      mk("P-6", "Sub-task", 4), // already pulled
+    ];
+    const rollups = { "P-5": 8 };
+    const pulled = new Set(["P-6"]);
+    const ids = (f: Parameters<typeof filterBacklogIssues>[3]) =>
+      filterBacklogIssues(issues, rollups, pulled, f).map((i) => i.id);
+
+    assert.deepEqual(ids({}), ["P-1", "P-2", "P-3", "P-4"]);
+    assert.deepEqual(ids({ type: "SUB-TASK" }), ["P-1", "P-2", "P-3"]);
+    assert.deepEqual(ids({ type: "sub-task", estimate: "without" }), ["P-2", "P-3"]);
+    assert.deepEqual(ids({ estimate: "with" }), ["P-1", "P-4"]);
+    assert.deepEqual(ids({ estimate: "any", search: "login" }), ["P-4"]);
+    assert.deepEqual(ids({ search: "p-3" }), ["P-3"]);
+    assert.deepEqual(ids({ type: "Epic" }), []);
   }
 
   console.log("youtrack.selfcheck: all assertions passed");

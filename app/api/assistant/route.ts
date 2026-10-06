@@ -13,6 +13,8 @@ import {
   type AssistantTool,
 } from "@/infrastructure/query-assistant/client";
 import { isClientMessage } from "./is-client-message.ts";
+import { createAgentToolExecutor } from "./agent-tools.ts";
+import { composeTools } from "./agent-tool-logic.ts";
 
 const MODEL = "openai/gpt-oss-120b";
 
@@ -23,7 +25,11 @@ const MODEL = "openai/gpt-oss-120b";
 const REQUEST_TIMEOUT_MS = 60_000;
 
 const SYSTEM_PROMPT = [
-  "You are a read-only assistant helping a project manager ask questions about their YouTrack project data.",
+  "You are an assistant helping a project manager with their YouTrack project data and this app's active Sprint.",
+  "You can never write anything -- not to YouTrack, not to the Sprint. To help the PM add backlog issues to the active Sprint: call list_backlog_issues with the filters they asked for (type, estimate with/without, search), then call show_issue_picker with the ids you chose from that result. The PM ticks rows and clicks Add to sprint themselves.",
+  "Set preselect true on show_issue_picker only when the PM asked to add the issues. Never say issues were added -- only the PM's click adds them.",
+  "After show_issue_picker, don't repeat the issue list in prose -- the picker shows it; just report the count (and how many need an estimate). If list_backlog_issues has returned < total, or backlogTruncated is true, say the list is partial.",
+  "Use list_backlog_issues (not search_issues) for questions about which backlog issues can be pulled, or which lack estimates.",
   "Prefer calling a tool over guessing. Never state a specific figure, count, status, or fact unless a tool call actually returned it.",
   "If no available tool can answer the question, say so plainly instead of inventing an answer.",
   "Keep answers concise and grounded only in the tool results you actually received this turn.",
@@ -92,10 +98,10 @@ export async function POST(request: Request) {
     return errorStream("Set YOUTRACK_MCP_SERVER_URL, YOUTRACK_MCP_PROJECT_ID, and YOUTRACK_MCP_AUTH_TOKEN first.");
   }
 
-  let tools: AssistantTool[];
+  let mcpTools: AssistantTool[];
   try {
     const registry = await getReadOnlyToolRegistry(config);
-    tools = registry.map((tool) => ({
+    mcpTools = registry.map((tool) => ({
       name: tool.name,
       description: tool.description,
       parameters: (tool.inputSchema as Record<string, unknown> | undefined) ?? {},
@@ -105,6 +111,11 @@ export async function POST(request: Request) {
     return errorStream(error instanceof Error ? error.message : "Could not reach the YouTrack MCP server.");
   }
 
+  // App-local agent tools first; MCP tools stay the read-only allowlist.
+  const { tools, executeTool } = composeTools(mcpTools, createAgentToolExecutor(), (name, args) =>
+    callAllowedTool(config, name, args),
+  );
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const turn = runAssistantTurn({
@@ -112,7 +123,7 @@ export async function POST(request: Request) {
         model: MODEL,
         messages: [{ role: "system", content: SYSTEM_PROMPT }, ...clientMessages],
         tools,
-        executeTool: (name, args) => callAllowedTool(config, name, args),
+        executeTool,
       });
 
       // Bounds the whole turn's wall-clock time -- if it's still running

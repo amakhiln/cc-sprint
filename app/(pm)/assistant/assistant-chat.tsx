@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { ArrowUp, CircleHelp, Database, MessageCircle, RotateCcw } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import type { AssistantChunk } from "@/infrastructure/query-assistant/client";
 import { AssistantCapabilities } from "./assistant-capabilities";
+import { isAssistantChunk } from "./chunk";
+
+// @a2ui/react isn't SSR-safe -- client-only.
+const IssuePicker = dynamic(() => import("./issue-picker"), { ssr: false });
 
 type ChatSource = { label: string; value: string };
 
@@ -14,6 +19,9 @@ type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   sources: ChatSource[];
+  // A2UI surfaces from agent tools (the issue picker) -- UI-only, never
+  // resent to the model.
+  surfaces: unknown[];
 };
 
 function formatSourceValue(value: string): string {
@@ -191,11 +199,6 @@ function AssistantAvatar() {
   );
 }
 
-function isAssistantChunk(value: unknown): value is AssistantChunk {
-  const type = (value as { type?: unknown } | null)?.type;
-  return typeof value === "object" && value !== null && (type === "text" || type === "source" || type === "error");
-}
-
 // Never persisted server-side (Story 5.2) -- this component's own state is
 // the entire history; every send resends the running list of user/assistant
 // turns (no source lines, those are UI-only) as the request body.
@@ -235,8 +238,8 @@ export function AssistantChat() {
 
     setError(null);
     setInput("");
-    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: question, sources: [] }];
-    setMessages([...nextMessages, { role: "assistant", content: "", sources: [] }]);
+    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: question, sources: [], surfaces: [] }];
+    setMessages([...nextMessages, { role: "assistant", content: "", sources: [], surfaces: [] }]);
     setPending(true);
 
     try {
@@ -309,7 +312,9 @@ export function AssistantChat() {
       next[next.length - 1] =
         chunk.type === "text"
           ? { ...last, content: last.content + chunk.delta }
-          : { ...last, sources: [...last.sources, { label: chunk.label, value: chunk.value }] };
+          : chunk.type === "ui"
+            ? { ...last, surfaces: [...last.surfaces, chunk.surface] }
+            : { ...last, sources: [...last.sources, { label: chunk.label, value: chunk.value }] };
       return next;
     });
   }
@@ -373,6 +378,9 @@ export function AssistantChat() {
                         {message.sources.length > 0 ? "Reading the results…" : "Checking YouTrack…"}
                       </p>
                     ) : null}
+                    {message.surfaces.map((surface, surfaceIndex) => (
+                      <IssuePicker key={surfaceIndex} surface={surface} />
+                    ))}
                     {message.sources.length > 0 && (
                       <div className="flex flex-col gap-1.5">
                         {message.sources.map((source, sourceIndex) => (

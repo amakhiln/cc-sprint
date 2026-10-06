@@ -1,10 +1,16 @@
-import { ListChecks, Users, BookOpen, FolderKanban, Ban } from "lucide-react";
+import { ListChecks, Users, BookOpen, FolderKanban, Ban, CalendarPlus } from "lucide-react";
 
 // What the Assistant can actually answer -- one group per slice of the
-// read-only YouTrack MCP allowlist (infrastructure/youtrack-mcp/tool-allowlist.ts).
-// Keep this in step with that list: never advertise a question no allowed
-// tool can answer.
+// read-only YouTrack MCP allowlist (infrastructure/youtrack-mcp/tool-allowlist.ts)
+// plus the app-local agent tools (app/api/assistant/agent-tools.ts). Keep this
+// in step with both: never advertise a question no tool can answer.
 const CAPABILITIES = [
+  {
+    title: "Sprint backlog",
+    icon: CalendarPlus,
+    description: "Filter the pullable backlog by type and estimate, then tick issues to add to the active Sprint.",
+    examples: ["Show sub-tasks without estimates", "Add the estimated tasks to the sprint"],
+  },
   {
     title: "Issues",
     icon: ListChecks,
@@ -38,8 +44,9 @@ const CAPABILITIES = [
 
 // Stated up front so a question outside these bounds isn't a surprise.
 const LIMITS = [
-  "Read-only — it can't create or edit issues, change assignees, comment, or log work.",
-  "Only sees YouTrack — not this app's Sprints, Capacity, Leave, or Progress figures.",
+  "Never changes YouTrack — it can't create or edit issues, change assignees, comment, or log work.",
+  "Never adds to the Sprint by itself — only your click on Add to sprint does.",
+  "Doesn't see this app's Capacity, Leave, or Progress figures.",
   "Forgets the conversation when you leave or reload the page.",
 ];
 
