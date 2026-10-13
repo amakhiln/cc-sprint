@@ -86,7 +86,10 @@ export default async function VelocityHistoryPage() {
                 {rows.map(({ sprint, plannedVelocityHours, actualVelocityHours, delta }) => (
                   <tr key={sprint.id} className="border-t border-border">
                     <td className="py-3 whitespace-nowrap text-foreground">
-                      {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
+                      {sprint.name && <div>{sprint.name}</div>}
+                      <div className={sprint.name ? "text-xs text-muted-foreground" : undefined}>
+                        {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
+                      </div>
                     </td>
                     <td className="py-3 pr-6">
                       <div

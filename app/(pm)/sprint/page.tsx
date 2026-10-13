@@ -3,6 +3,7 @@ import { CalendarRange, ArrowUpRight } from "lucide-react";
 import { sprintRepository } from "@/infrastructure/db/sprint-repository";
 import { backlogIssueRepository } from "@/infrastructure/db/backlog-issue-repository";
 import { teamMemberRepository } from "@/infrastructure/db/team-member-repository";
+import { loadSprintSuggestion } from "@/app/sprint-suggestion-data";
 import { CreateSprintForm } from "./create-sprint-form";
 import { BacklogDrawer } from "./backlog-drawer";
 
@@ -30,6 +31,9 @@ export default async function SprintPage() {
         assigneeId: issue.assigneeId,
       }))
     : [];
+  const { suggestion, loadFailed } = activeSprint
+    ? { suggestion: null, loadFailed: false }
+    : await loadSprintSuggestion();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 pt-6 pb-12">
@@ -59,8 +63,13 @@ export default async function SprintPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Sprint active</p>
               <p className="font-heading text-lg text-foreground">
-                {formatDate(activeSprint.startDate)} – {formatDate(activeSprint.endDate)}
+                {activeSprint.name ?? `${formatDate(activeSprint.startDate)} – ${formatDate(activeSprint.endDate)}`}
               </p>
+              {activeSprint.name && (
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(activeSprint.startDate)} – {formatDate(activeSprint.endDate)}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -82,7 +91,7 @@ export default async function SprintPage() {
           <p className="mb-6 text-muted-foreground">
             No active Sprint yet — create one to start planning.
           </p>
-          <CreateSprintForm />
+          <CreateSprintForm suggestion={suggestion} loadFailed={loadFailed} />
         </section>
       )}
     </div>

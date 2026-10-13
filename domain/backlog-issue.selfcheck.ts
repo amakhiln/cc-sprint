@@ -77,6 +77,8 @@ function makeFakeSprintRepo(activeSprintId: string | null): Pick<SprintRepo, "fi
         startDate: new Date("2026-08-17"),
         endDate: new Date("2026-08-28"),
         status: "active",
+        name: null,
+        youtrackSprintId: null,
         snapshotCapacityHours: null,
         snapshotAllocationBreakdown: null,
         snapshotActualVelocityHours: null,
