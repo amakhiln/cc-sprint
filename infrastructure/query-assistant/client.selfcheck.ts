@@ -39,8 +39,8 @@ function fakeStream(...responses: StreamEvent[][]): ChatCompletionFn {
 
 async function main() {
   // HAPPY_PATH -- the model calls a tool, gets a real result, then answers
-  // in plain text streamed as several small deltas (token-by-token). A
-  // source chunk marks the tool that backed the answer.
+  // in plain text streamed as several small deltas (token-by-token). Step
+  // chunks show the tool call running, then done -- never its raw result.
   {
     const createCompletion = fakeStream(
       [{ type: "tool_call_delta", index: 0, id: "call_1", name: "search_issues", argumentsDelta: '{"query":"open bugs"}' }],
@@ -52,7 +52,7 @@ async function main() {
     const executeTool: ToolExecutor = async (name, args) => {
       assert.equal(name, "search_issues");
       assert.deepEqual(args, { query: "open bugs" });
-      return { ok: true, result: { count: 3 } };
+      return { ok: true, result: { count: 3 }, summary: "3 results" };
     };
 
     const chunks = await collect(
@@ -65,14 +65,15 @@ async function main() {
     );
 
     assert.deepEqual(chunks, [
-      { type: "source", label: "search_issues", value: JSON.stringify({ count: 3 }) },
+      { type: "step", id: "call_1", name: "search_issues", args: { query: "open bugs" }, status: "running" },
+      { type: "step", id: "call_1", name: "search_issues", args: { query: "open bugs" }, status: "done", summary: "3 results" },
       { type: "text", delta: "There are " },
       { type: "text", delta: "3 open bugs." },
     ]);
   }
 
   // NO_TOOL_ANSWERS -- the model declines without ever calling a tool; no
-  // source chunk is emitted, and the streamed text arrives as it comes in.
+  // step chunk is emitted, and the streamed text arrives as it comes in.
   {
     const createCompletion = fakeStream([{ type: "content", delta: "I can't answer that from the data I have access to." }]);
     const executeTool: ToolExecutor = async () => {
@@ -113,7 +114,7 @@ async function main() {
     assert.equal(calls, 6, "should stop calling the completion API at the iteration cap");
     const last = chunks[chunks.length - 1];
     assert.equal(last.type, "error");
-    assert.ok(chunks.filter((c) => c.type === "source").length === 6, "one source chunk per successfully-called tool");
+    assert.ok(chunks.filter((c) => c.type === "step" && c.status === "done").length === 6, "one done step per successfully-called tool");
   }
 
   // MCP_UNREACHABLE -- a tool-call failure ends the turn immediately with an
@@ -136,7 +137,12 @@ async function main() {
     );
 
     assert.equal(completionCalls, 1, "should stop after the first failing tool call, not retry");
-    assert.deepEqual(chunks, [{ type: "error", message: "Could not reach the YouTrack MCP server." }]);
+    const step = { type: "step", id: "call_1", name: "search_issues", args: {} };
+    assert.deepEqual(chunks, [
+      { ...step, status: "running" },
+      { ...step, status: "failed", summary: "Could not reach the YouTrack MCP server." },
+      { type: "error", message: "Could not reach the YouTrack MCP server." },
+    ]);
   }
 
   // TOOLS_SHAPE -- createCompletion receives the exact
@@ -259,8 +265,8 @@ async function main() {
     assert.deepEqual(mapGroqStreamChunk(emptyChunk), []);
   }
 
-  // UI_PASSTHROUGH -- an executor's `ui` emits a ui chunk; the model and the
-  // source chunk only ever see `result`, never the UI payload. A `ui` key
+  // UI_PASSTHROUGH -- an executor's `ui` emits a ui chunk after the done
+  // step; the model only ever sees `result`, never the UI payload. A `ui` key
   // inside `result` (e.g. an MCP payload field) is left alone.
   {
     let toolMessage: unknown;
@@ -283,8 +289,9 @@ async function main() {
       }),
     );
     assert.deepEqual(chunks, [
+      { type: "step", id: "call_1", name: "show_issue_picker", args: {}, status: "running" },
+      { type: "step", id: "call_1", name: "show_issue_picker", args: {}, status: "done" },
       { type: "ui", surface: { messages: ["secret"] } },
-      { type: "source", label: "show_issue_picker", value: JSON.stringify({ shown: 2, ui: "mcp-field" }) },
       { type: "text", delta: "Here they are." },
     ]);
     assert.deepEqual(toolMessage, { role: "tool", tool_call_id: "call_1", content: JSON.stringify({ shown: 2, ui: "mcp-field" }) });

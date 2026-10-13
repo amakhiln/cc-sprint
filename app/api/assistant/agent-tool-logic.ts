@@ -13,9 +13,11 @@ import { ALREADY_PULLED_ERROR, type PullBacklogIssueInput, type PullBacklogIssue
 import type { Sprint } from "../../../domain/sprint.ts";
 import type { AssistantTool, ToolExecutor } from "../../../infrastructure/query-assistant/client.ts";
 import { buildPickerSurface } from "./picker-surface.ts";
+import { buildResultSurface } from "./result-surface.ts";
 
 // Keeps the model's context small; `total` still reports the real count.
-const MAX_ROWS_TO_MODEL = 150;
+// Kept small for Groq free-tier input-token limits; the picker still caps at MAX_PICKER_IDS.
+const MAX_ROWS_TO_MODEL = 50;
 export const MAX_PICKER_IDS = 150;
 
 export type BacklogState =
@@ -58,7 +60,24 @@ export const AGENT_TOOLS: AssistantTool[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: "add_issues_to_sprint",
+    description:
+      "Add backlog issues to the active Sprint. Only when the PM explicitly asked you to add specific issues, or the ones they have ticked, in their latest message. Ids must come from list_backlog_issues or the PM's ticked list. Each id is re-checked (open, pullable, has an estimate); reports added / already in the Sprint / failed per id.",
+    parameters: {
+      type: "object",
+      properties: {
+        issueIds: { type: "array", items: { type: "string" }, description: "Issue ids to add." },
+      },
+      required: ["issueIds"],
+      additionalProperties: false,
+    },
+  },
 ];
+
+// Binds add_issues_to_sprint to the same path as the picker's Add button
+// (validation, pulls, page revalidation). Absent -> the tool reports it.
+export type AddIssues = (ids: string[]) => Promise<AddIssuesToActiveSprintResult>;
 
 const AGENT_TOOL_NAMES = new Set(AGENT_TOOLS.map((tool) => tool.name));
 
@@ -70,9 +89,23 @@ function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-export function runAgentToolWith(loadState: () => Promise<BacklogState>): ToolExecutor {
+export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssues?: AddIssues): ToolExecutor {
   return async (name, args) => {
     if (!isAgentTool(name)) return { ok: false, error: `Unknown tool: ${name}` };
+    if (name === "add_issues_to_sprint") {
+      if (!addIssues) return { ok: false, error: "Adding to the Sprint isn't available here." };
+      const ids = Array.isArray(args.issueIds) ? args.issueIds.filter((id): id is string => typeof id === "string") : [];
+      const added = await addIssues(Array.from(new Set(ids.map((id) => id.trim().toUpperCase()))));
+      if (!added.ok) return { ok: false, error: added.error };
+      const count = (status: AddToSprintRowResult["status"]) => added.results.filter((row) => row.status === status).length;
+      return {
+        ok: true,
+        summary: [`${count("added")} added`, count("already") && `${count("already")} already in the Sprint`, count("failed") && `${count("failed")} failed`]
+          .filter(Boolean)
+          .join(" · "),
+        result: { results: added.results },
+      };
+    }
     try {
       const state = await loadState();
       if (!state.ok) return { ok: false, error: state.error };
@@ -97,6 +130,15 @@ export function runAgentToolWith(loadState: () => Promise<BacklogState>): ToolEx
             availableTypes: Array.from(new Set(pullable.map((issue) => issue.type).filter((type) => type !== null))).sort(),
             issues: matches.slice(0, MAX_ROWS_TO_MODEL).map(({ id, summary, type, estimateHours }) => ({ id, summary, type, estimateHours })),
           },
+          summary: `${matches.length} pullable ${matches.length === 1 ? "issue" : "issues"}${state.truncated ? " (backlog listing capped)" : ""}`,
+          // The list *is* the picker -- the PM can tick and add straight away,
+          // without relying on the model to follow up with show_issue_picker.
+          ...(matches.length > 0 && {
+            ui: buildPickerSurface(`picker-${randomUUID()}`, matches.slice(0, MAX_PICKER_IDS), {
+              preselect: false,
+              hasActiveSprint: state.activeSprint !== null,
+            }),
+          }),
         };
       }
 
@@ -112,6 +154,7 @@ export function runAgentToolWith(loadState: () => Promise<BacklogState>): ToolEx
       const shownIds = new Set(rows.map((issue) => issue.id.toUpperCase()));
       return {
         ok: true,
+        summary: `${rows.length} ${rows.length === 1 ? "issue" : "issues"} to pick from`,
         result: {
           shown: rows.length,
           needsEstimate: rows.filter((issue) => !hasPullableEstimate(issue)).length,
@@ -198,7 +241,8 @@ export async function addIssuesWith(
 // The route's composition, pure so it's testable: agent tools are advertised
 // first and dispatched locally; every other name goes to the MCP executor
 // (which re-checks its own read-only allowlist). An MCP tool reusing an agent
-// tool's name is dropped rather than advertised twice.
+// tool's name is dropped rather than advertised twice. Any successful result
+// with rows and no surface of its own gets a read-only A2UI list.
 export function composeTools(
   mcpTools: AssistantTool[],
   runAgent: ToolExecutor,
@@ -206,6 +250,11 @@ export function composeTools(
 ): { tools: AssistantTool[]; executeTool: ToolExecutor } {
   return {
     tools: [...AGENT_TOOLS, ...mcpTools.filter((tool) => !isAgentTool(tool.name))],
-    executeTool: (name, args) => (isAgentTool(name) ? runAgent(name, args) : runMcp(name, args)),
+    executeTool: async (name, args) => {
+      const outcome = await (isAgentTool(name) ? runAgent(name, args) : runMcp(name, args));
+      if (!outcome.ok || outcome.ui != null) return outcome;
+      const table = buildResultSurface(`result-${randomUUID()}`, name, outcome.result);
+      return table ? { ...outcome, ui: table.surface, summary: outcome.summary ?? table.summary } : outcome;
+    },
   };
 }

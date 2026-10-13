@@ -29,6 +29,8 @@ async function main() {
     assert.equal(result.total, 1);
     assert.deepEqual(result.issues.map((i) => i.id), ["P-2"]);
     assert.deepEqual(result.availableTypes, ["Sub-task", "Task"]); // parent Story + pulled Task excluded
+    // The list is itself the picker, so adding never depends on a follow-up call.
+    assert.match((res.ui as { surfaceId: string }).surfaceId, /^picker-/);
   }
 
   // PROPOSE_ADD + HALLUCINATED_ID -- unknown/parent/pulled ids dropped, rows from real data.
@@ -41,13 +43,13 @@ async function main() {
     assert.equal(result.needsEstimate, 1);
     assert.deepEqual(result.dropped, ["P-4", "P-5", "FAKE-9"]);
     assert.ok(!("ui" in result), "the A2UI payload never goes to the model");
-    assert.equal((res as { ui: { messages: unknown[] } }).ui.messages.length, 3);
+    assert.equal((res as { ui: { messages: unknown[] } }).ui.messages.length, 2);
 
     const none = await run("show_issue_picker", { issueIds: ["FAKE-1"] });
     assert.equal(none.ok, false);
   }
 
-  // Caps -- >150 matches: total vs returned says the list is partial; ids past
+  // Caps -- >50 matches (rows to model) / >150 (picker): total vs returned says the list is partial; ids past
   // the picker cap are reported as dropped, not silently lost.
   {
     const many = Array.from({ length: 160 }, (_, i) => mk(`M-${i}`, "Task", 1));
@@ -55,7 +57,7 @@ async function main() {
     const list = await run("list_backlog_issues", {});
     assert.ok(list.ok);
     const r = list.result as { total: number; returned: number; issues: unknown[]; backlogTruncated: boolean; activeSprint: unknown };
-    assert.deepEqual([r.total, r.returned, r.issues.length, r.backlogTruncated], [160, 150, 150, true]);
+    assert.deepEqual([r.total, r.returned, r.issues.length, r.backlogTruncated], [160, 50, 50, true]);
     assert.deepEqual(r.activeSprint, { startDate: "2026-10-05", endDate: "2026-10-18" });
     const pick = await run("show_issue_picker", { issueIds: many.map((i) => i.id) });
     assert.ok(pick.ok);
@@ -73,11 +75,27 @@ async function main() {
       async (name) => (calls.push(`agent:${name}`), { ok: true, result: null }),
       async (name) => (calls.push(`mcp:${name}`), { ok: true, result: null }),
     );
-    assert.deepEqual(tools.map((t) => t.name), ["list_backlog_issues", "show_issue_picker", "search_issues"]);
+    assert.deepEqual(tools.map((t) => t.name), ["list_backlog_issues", "show_issue_picker", "add_issues_to_sprint", "search_issues"]);
     await executeTool("list_backlog_issues", {});
     await executeTool("show_issue_picker", {});
     await executeTool("search_issues", {});
     assert.deepEqual(calls, ["agent:list_backlog_issues", "agent:show_issue_picker", "mcp:search_issues"]);
+  }
+
+  // CHAT_ADD -- add_issues_to_sprint goes through the injected Add path with
+  // normalised, de-duplicated ids and reports per-status counts.
+  {
+    let sent: string[] = [];
+    const run = runAgentToolWith(async () => state(), async (ids) => {
+      sent = ids;
+      return { ok: true, results: [{ id: "P-1", status: "added" }, { id: "P-4", status: "already" }, { id: "FAKE-9", status: "failed", message: "nope" }] };
+    });
+    const res = await run("add_issues_to_sprint", { issueIds: ["p-1", "P-1", " P-4 ", "FAKE-9", 7] });
+    assert.deepEqual(sent, ["P-1", "P-4", "FAKE-9"]);
+    assert.ok(res.ok);
+    assert.equal(res.summary, "1 added · 1 already in the Sprint · 1 failed");
+    // No Add path bound -> clean tool error, never a silent no-op.
+    assert.equal((await runAgentToolWith(async () => state())("add_issues_to_sprint", { issueIds: ["P-1"] })).ok, false);
   }
 
   // YOUTRACK_DOWN / NOT_CONFIGURED -- load failure surfaces as a tool error.

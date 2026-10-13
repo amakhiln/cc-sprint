@@ -18,11 +18,21 @@ export type AssistantTool = {
 export type ToolExecutor = (
   name: string,
   args: Record<string, unknown>,
-) => Promise<{ ok: true; result: unknown; ui?: unknown } | { ok: false; error: string }>;
+) => Promise<{ ok: true; result: unknown; ui?: unknown; summary?: string } | { ok: false; error: string }>;
 
 export type AssistantChunk =
   | { type: "text"; delta: string }
-  | { type: "source"; label: string; value: string }
+  // Live progress for one tool call, Claude Code-style: "running" when it
+  // starts, then "done"/"failed" (same id) with a one-line summary. Never
+  // carries the raw result.
+  | {
+      type: "step";
+      id: string;
+      name: string;
+      args: Record<string, unknown>;
+      status: "running" | "done" | "failed";
+      summary?: string;
+    }
   // An interactive surface (A2UI messages) for the client to render, from a
   // tool result's `ui` -- never fed back to the model.
   | { type: "ui"; surface: unknown }
@@ -37,6 +47,11 @@ const MAX_ITERATIONS = 6;
 // makes, so it gets its own timeout the same way infrastructure/youtrack-mcp
 // bounds its own MCP calls.
 const REQUEST_TIMEOUT_MS = 30_000;
+
+// Tool results go back to the model on every later iteration, so one huge
+// page (e.g. search_issues) can blow a small per-minute token budget. The UI
+// shows the full result via the tool's own `ui` surface.
+const MAX_TOOL_RESULT_CHARS = 6_000;
 
 // One piece of a streamed completion, already flattened out of Groq's
 // per-chunk delta shape (a raw chunk can carry content and/or one or more
@@ -136,8 +151,11 @@ export async function* runAssistantTurnWith(
         // executor rejects it cleanly instead of this loop throwing.
       }
 
+      const step = { type: "step" as const, id: call.id || `${iteration}-${call.name}`, name: call.name, args };
+      yield { ...step, status: "running" };
       const result = await executeTool(call.name, args);
       if (!result.ok) {
+        yield { ...step, status: "failed", summary: result.error };
         // A real tool-call failure (MCP unreachable, timeout, disallowed
         // name) ends the turn immediately -- never fed back to the model as
         // if it were a normal result to reason around (never a silent
@@ -146,11 +164,14 @@ export async function* runAssistantTurnWith(
         return;
       }
 
+      yield { ...step, status: "done", ...(result.summary && { summary: result.summary }) };
       if (result.ui != null) {
         yield { type: "ui", surface: result.ui };
       }
-      yield { type: "source", label: call.name, value: JSON.stringify(result.result) };
-      working.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result.result) });
+      const resultJson = JSON.stringify(result.result);
+      const toModel =
+        resultJson.length > MAX_TOOL_RESULT_CHARS ? `${resultJson.slice(0, MAX_TOOL_RESULT_CHARS)}...[truncated]` : resultJson;
+      working.push({ role: "tool", tool_call_id: call.id, content: toModel });
     }
   }
 
@@ -205,6 +226,9 @@ export function runAssistantTurn({
       messages: createMessages,
       tools: createTools,
       stream: true,
+      // Reasoning models (Qwen 3, gpt-oss) otherwise leak their private
+      // reasoning -- e.g. "...</think>" -- into the visible answer.
+      include_reasoning: false,
     });
     for await (const chunk of stream) {
       yield* mapGroqStreamChunk(chunk);

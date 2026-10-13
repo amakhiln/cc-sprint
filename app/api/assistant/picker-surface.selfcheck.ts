@@ -1,17 +1,17 @@
-// Runnable self-check: the picker's A2UI messages are accepted by the real
-// v0.9 MessageProcessor, unestimated issues never become checkboxes, and the
-// Add button's action resolves the ticked rows. Run with:
+// Runnable self-check: the picker is a ResultTable in selection mode that the
+// real v0.9 MessageProcessor accepts, unestimated issues are never pickable,
+// and an Add dispatched through A2UI's own action path reaches onAction with
+// the picked ids. Run with:
 //   node app/api/assistant/picker-surface.selfcheck.ts
 import assert from "node:assert/strict";
-import { basicCatalog } from "@a2ui/react/v0_9";
-import { ComponentContext, MessageProcessor, type ActionPayload } from "@a2ui/web_core/v0_9";
-import { BASIC_CATALOG_ID, buildPickerSurface, tickedIssueIds } from "./picker-surface.ts";
+import { Catalog, ComponentContext, MessageProcessor, type ActionPayload } from "@a2ui/web_core/v0_9";
+import { ADD_TO_SPRINT_EVENT, buildPickerSurface, pickedIssueIds } from "./picker-surface.ts";
+import { APP_CATALOG_ID, ResultTableApi, type ResultTableProps } from "./result-surface.ts";
 
 const mk = (id: string, estimateHours: number | null) => ({
-  id, summary: `Issue ${id}`, type: "Sub-task", estimateHours, assignee: null, priority: null, state: null,
+  id, summary: `Issue ${id}`, type: "Sub-task", estimateHours, assignee: null, priority: null, state: "Open",
 });
-
-assert.equal(basicCatalog.id, BASIC_CATALOG_ID);
+const catalog = new Catalog(APP_CATALOG_ID, "0.9", [ResultTableApi]);
 
 {
   const surface = buildPickerSurface("s1", [mk("P-1", 3), mk("P-2", null), mk("P-3", 0), mk("P-4", 1.5)], {
@@ -19,50 +19,35 @@ assert.equal(basicCatalog.id, BASIC_CATALOG_ID);
     hasActiveSprint: true,
   });
   let action: ActionPayload | null = null;
-  const processor = new MessageProcessor([basicCatalog], (a) => { action = a; });
+  const processor = new MessageProcessor([catalog], (a) => { action = a; });
   processor.processMessages(surface.messages as never);
   const model = processor.getSurface("s1");
   assert.ok(model, "surface created");
-  const data = model.dataModel.get("/") as { issues: { id: string; selected: boolean }[]; needsEstimate: { id: string }[] };
-  assert.deepEqual(data.issues.map((i) => i.id), ["P-1", "P-4"]);
-  assert.ok(data.issues.every((i) => i.selected));
-  assert.deepEqual(data.needsEstimate.map((i) => i.id), ["P-2", "P-3"]);
+  const props = model.componentsModel.get("root")!.properties as ResultTableProps;
+  assert.equal(props.title, "2 issues ready to add · 2 need an estimate");
+  // Addable first; unestimated rows visible but disabled.
+  assert.deepEqual(props.rows.map((r) => [r.id, !!r.disabledReason]), [["P-1", false], ["P-4", false], ["P-2", true], ["P-3", true]]);
+  assert.deepEqual(props.rows[0].cells, ["P-1", "Issue P-1", "Sub-task", "Open", "", "3.0"]);
+  assert.deepEqual(props.select, { event: ADD_TO_SPRINT_EVENT, buttonLabel: "Add to sprint", preselect: true });
 
-  const button = (surface.messages[1] as { updateComponents: { components: { id: string; checks?: unknown }[] } })
-    .updateComponents.components.find((c) => c.id === "add");
-  assert.ok(button && !button.checks, "enabled with an active Sprint");
-
-  // Same path the Button takes: resolve the action against the data model,
-  // then dispatch.
-  const ctx = new ComponentContext(model, "add");
-  const raw = model.componentsModel.get("add")!.properties.action as Parameters<typeof ctx.dataContext.resolveAction>[0];
-  await ctx.dispatchAction(ctx.dataContext.resolveAction(raw) as never);
-  const resolved = (action as ActionPayload | null)?.context.issues as { id: string }[];
-  assert.deepEqual(resolved.map((i) => i.id), ["P-1", "P-4"]);
+  // Same call ResultTable's button makes.
+  await new ComponentContext(model, "root").dispatchAction({ event: { name: ADD_TO_SPRINT_EVENT, context: { ids: ["P-1", "P-4"] } } });
+  const got = action as ActionPayload | null;
+  assert.equal(got?.name, ADD_TO_SPRINT_EVENT);
+  assert.deepEqual(pickedIssueIds(got?.context.ids), ["P-1", "P-4"]);
 }
 
 {
   const surface = buildPickerSurface("s2", [mk("P-1", 3)], { preselect: false, hasActiveSprint: false });
-  const components = (surface.messages[1] as { updateComponents: { components: { id: string; checks?: unknown }[] } })
-    .updateComponents.components;
-  assert.ok(components.find((c) => c.id === "add")?.checks, "Add disabled without an active Sprint");
-  assert.ok(components.some((c) => c.id === "no_sprint"));
-  new MessageProcessor([basicCatalog]).processMessages(surface.messages as never);
+  const processor = new MessageProcessor([catalog]);
+  processor.processMessages(surface.messages as never);
+  const props = processor.getSurface("s2")!.componentsModel.get("root")!.properties as ResultTableProps;
+  assert.ok(props.select?.blockedReason, "Add blocked without an active Sprint");
+  assert.equal(props.select?.preselect, false);
 }
 
-// Only ticked, well-formed rows reach the Add action.
-assert.deepEqual(
-  tickedIssueIds([
-    { id: "P-1", selected: true },
-    { id: "P-2", selected: false },
-    { id: "P-3" },
-    { id: 7, selected: true },
-    null,
-    { id: "P-4", selected: true },
-  ]),
-  ["P-1", "P-4"],
-);
-assert.deepEqual(tickedIssueIds([{ id: "P-1", selected: false }]), []);
-assert.deepEqual(tickedIssueIds(undefined), []);
+// Only string ids reach the Add action.
+assert.deepEqual(pickedIssueIds(["P-1", 7, null, "P-2"]), ["P-1", "P-2"]);
+assert.deepEqual(pickedIssueIds(undefined), []);
 
-console.log("picker-surface.selfcheck: all assertions passed");
+console.log("picker-surface self-check passed");

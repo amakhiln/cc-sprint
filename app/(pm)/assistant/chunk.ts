@@ -8,8 +8,15 @@ export function isAssistantChunk(value: unknown): value is AssistantChunk {
   switch (chunk.type) {
     case "text":
       return typeof chunk.delta === "string";
-    case "source":
-      return typeof chunk.label === "string" && typeof chunk.value === "string";
+    case "step":
+      return (
+        typeof chunk.id === "string" &&
+        typeof chunk.name === "string" &&
+        typeof chunk.args === "object" &&
+        chunk.args !== null &&
+        (chunk.status === "running" || chunk.status === "done" || chunk.status === "failed") &&
+        (chunk.summary === undefined || typeof chunk.summary === "string")
+      );
     case "ui":
       return typeof chunk.surface === "object" && chunk.surface !== null;
     case "error":

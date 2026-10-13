@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { ArrowUp, CircleHelp, Database, MessageCircle, RotateCcw } from "lucide-react";
+import { ArrowUp, CircleHelp, MessageCircle, RotateCcw } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
@@ -10,181 +10,84 @@ import type { AssistantChunk } from "@/infrastructure/query-assistant/client";
 import { AssistantCapabilities } from "./assistant-capabilities";
 import { isAssistantChunk } from "./chunk";
 
-// @a2ui/react isn't SSR-safe -- client-only.
-const IssuePicker = dynamic(() => import("./issue-picker"), { ssr: false });
+// @a2ui/react isn't SSR-safe -- client-only. Renders every A2UI surface:
+// the issue picker and the read-only result tables alike.
+const AssistantSurface = dynamic(() => import("./assistant-surface"), {
+  ssr: false,
+});
 
-type ChatSource = { label: string; value: string };
+type ChatStep = Omit<Extract<AssistantChunk, { type: "step" }>, "type">;
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
-  sources: ChatSource[];
-  // A2UI surfaces from agent tools (the issue picker) -- UI-only, never
+  // Tool calls as they run, merged by id (running -> done/failed).
+  steps: ChatStep[];
+  // A2UI surfaces (issue picker, tool-result lists) -- UI-only, never
   // resent to the model.
   surfaces: unknown[];
 };
 
-function formatSourceValue(value: string): string {
-  try {
-    return JSON.stringify(JSON.parse(value), null, 2);
-  } catch {
-    return value;
-  }
+function surfaceId(surface: unknown): string {
+  const id = (surface as { surfaceId?: unknown } | null)?.surfaceId;
+  return typeof id === "string" ? id : "";
 }
 
-type SourceRow = Record<string, unknown>;
+// A later issue picker (list, then narrow to chosen ids) supersedes the
+// surfaces before it -- the same rows shouldn't show twice.
+function surfacesBefore(surfaces: unknown[], incoming: unknown): unknown[] {
+  return surfaceId(incoming).startsWith("picker-") ? [] : surfaces;
+}
 
-function isRowArray(value: unknown): value is SourceRow[] {
+function mergeStep(steps: ChatStep[], chunk: Extract<AssistantChunk, { type: "step" }>): ChatStep[] {
+  const step: ChatStep = {
+    id: chunk.id,
+    name: chunk.name,
+    args: chunk.args,
+    status: chunk.status,
+    summary: chunk.summary,
+  };
+  return steps.some((existing) => existing.id === step.id)
+    ? steps.map((existing) => (existing.id === step.id ? step : existing))
+    : [...steps, step];
+}
+
+// "list_backlog_issues" -> "List backlog issues".
+function toolLabel(name: string): string {
+  const words = name.replaceAll("_", " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+// `type: "Task", estimate: "without"` -- trimmed so one step stays one line.
+function argsLabel(args: Record<string, unknown>): string {
+  const text = Object.entries(args)
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+    .join(", ");
+  return text.length > 80 ? `${text.slice(0, 79)}…` : text;
+}
+
+const STEP_DOT = {
+  running: "bg-[color:var(--accent-peach)] motion-safe:animate-pulse",
+  done: "bg-[color:var(--accent-mint)]",
+  failed: "bg-destructive",
+} as const;
+
+// One tool call, Claude Code-style: "● Tool(args)" then "⎿ result".
+function StepLine({ step }: { step: ChatStep }) {
   return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every((item) => item !== null && typeof item === "object" && !Array.isArray(item))
-  );
-}
-
-// A tool result is either directly an array of records, or a wrapper object
-// with one property that is (e.g. YouTrack search_issues' `{issuesPage:
-// [...], hasNextPage}`) -- checked generically, not by name, so this works
-// for any tool's list-shaped result, not just search_issues.
-function findRowArray(value: unknown): SourceRow[] | null {
-  if (isRowArray(value)) {
-    return value;
-  }
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    for (const nested of Object.values(value)) {
-      if (isRowArray(nested)) {
-        return nested;
-      }
-    }
-  }
-  return null;
-}
-
-// The raw MCP tool result is `Array<{type, text}>`, with the actual payload
-// JSON-encoded inside each block's `text` string -- unwrap that before
-// looking for a row array.
-function extractSourceRows(value: string): SourceRow[] | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    return null;
-  }
-
-  // Unwrapped payloads first -- the raw MCP envelope itself
-  // (`[{type:"text",text:"..."}]`) is also technically an array of
-  // records, but the actual tool data nested inside `text` is what should
-  // win whenever it's there.
-  const candidates: unknown[] = [];
-  if (Array.isArray(parsed)) {
-    for (const block of parsed) {
-      const text = (block as { text?: unknown } | null)?.text;
-      if (typeof text === "string") {
-        try {
-          candidates.push(JSON.parse(text));
-        } catch {
-          // Not JSON -- ignore, the raw-JSON fallback view still covers it.
-        }
-      }
-    }
-  }
-  if (candidates.length === 0) candidates.push(parsed);
-
-  for (const candidate of candidates) {
-    const rows = findRowArray(candidate);
-    if (rows) return rows;
-  }
-  // A single record (e.g. get_current_user) -- one row, not the envelope.
-  const record = candidates.find(
-    (candidate): candidate is SourceRow =>
-      candidate !== null && typeof candidate === "object" && !Array.isArray(candidate),
-  );
-  return record ? [record] : null;
-}
-
-function formatCellValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-function isHttpUrl(value: string): boolean {
-  return value.startsWith("http://") || value.startsWith("https://");
-}
-
-// One level of nested plain-object fields (YouTrack's customFields, e.g.
-// {Priority, Type, State}) is flattened into its own columns instead of
-// showing as an unreadable "[object Object]" cell.
-function flattenRow(row: SourceRow): Record<string, string> {
-  const flat: Record<string, string> = {};
-  for (const [key, value] of Object.entries(row)) {
-    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
-        flat[subKey] = formatCellValue(subValue);
-      }
-    } else {
-      flat[key] = formatCellValue(value);
-    }
-  }
-  return flat;
-}
-
-// Collapsed by default -- the answer is the point; the raw data behind it is
-// one click away for anyone who wants to check it.
-function SourceBlock({ source }: { source: ChatSource }) {
-  const rows = extractSourceRows(source.value)?.map(flattenRow) ?? null;
-  const columns = rows ? Array.from(new Set(rows.flatMap((row) => Object.keys(row)))) : [];
-  return (
-    <details className="group/source rounded-md border border-[color:var(--border-glass)] bg-[color:var(--surface-glass)] text-xs text-muted-foreground">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 hover:text-foreground [&::-webkit-details-marker]:hidden">
-        <Database aria-hidden="true" className="size-3.5" />
-        <span>
-          Source: <span className="font-medium text-foreground">{source.label}</span>
-          {rows ? ` · ${rows.length} ${rows.length === 1 ? "result" : "results"}` : ""}
-        </span>
-        <span aria-hidden="true" className="ml-auto transition-transform group-open/source:rotate-90">›</span>
-      </summary>
-      <div className="border-t border-[color:var(--border-glass)] p-2">
-        {rows ? (
-          <div className="prose-assistant max-h-64 overflow-auto">
-            <table>
-              <thead>
-                <tr>
-                  {columns.map((column) => (
-                    <th key={column}>{column}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {columns.map((column) => {
-                      const value = row[column] ?? "";
-                      return (
-                        <td key={column}>
-                          {isHttpUrl(value) ? (
-                            <a href={value} target="_blank" rel="noopener noreferrer">
-                              Open ↗
-                            </a>
-                          ) : (
-                            value
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          // No obvious row shape (a scalar, plain text, etc.).
-          <pre className="max-h-48 overflow-auto rounded-sm bg-[color:var(--surface-glass-strong)] p-2 whitespace-pre-wrap">
-            {formatSourceValue(source.value)}
-          </pre>
+    <li className="flex flex-col gap-0.5 text-xs">
+      <div className="flex min-w-0 items-center gap-2">
+        <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${STEP_DOT[step.status]}`} />
+        <span className="shrink-0 font-medium text-foreground">{toolLabel(step.name)}</span>
+        {Object.keys(step.args).length > 0 && (
+          <span className="truncate font-mono text-muted-foreground">({argsLabel(step.args)})</span>
         )}
       </div>
-    </details>
+      <div className={`flex gap-1.5 pl-1 ${step.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
+        <span aria-hidden="true">⎿</span>
+        <span>{step.status === "running" ? "Running…" : (step.summary ?? (step.status === "done" ? "Done" : "Failed"))}</span>
+      </div>
+    </li>
   );
 }
 
@@ -208,17 +111,31 @@ export function AssistantChat() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const lastQuestionRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Ticked ids per picker surface, sent with each question so "add the
+  // selected ones" works from the chat. A ref: ticking shouldn't re-render.
+  const selectionsRef = useRef(new Map<string, string[]>());
+  const reportSelection = useCallback((surfaceId: string, ids: string[]) => {
+    selectionsRef.current.set(surfaceId, ids);
+  }, []);
+  const questionCount = messages.filter((message) => message.role === "user").length;
 
-  // Keep the newest message in view as it streams in.
+  // ChatGPT-style: each new question scrolls to the top of the page view and
+  // its answer streams in below it. Only on a new question -- never while
+  // the answer streams, so reading back up isn't yanked away.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    if (questionCount === 0) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    lastQuestionRef.current?.scrollIntoView({
+      block: "start",
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }, [questionCount]);
 
   function startNewChat() {
     setMessages([]);
+    selectionsRef.current.clear();
     setError(null);
     setShowHelp(false);
     inputRef.current?.focus();
@@ -238,15 +155,21 @@ export function AssistantChat() {
 
     setError(null);
     setInput("");
-    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: question, sources: [], surfaces: [] }];
-    setMessages([...nextMessages, { role: "assistant", content: "", sources: [], surfaces: [] }]);
+    const nextMessages: ChatMessage[] = [...messages, { role: "user", content: question, steps: [], surfaces: [] }];
+    setMessages([...nextMessages, { role: "assistant", content: "", steps: [], surfaces: [] }]);
     setPending(true);
 
     try {
       const response = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages.map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({
+          messages: nextMessages.map(({ role, content }) => ({
+            role,
+            content,
+          })),
+          selectedIssueIds: Array.from(new Set([...selectionsRef.current.values()].flat())),
+        }),
       });
 
       if (!response.ok) {
@@ -313,8 +236,11 @@ export function AssistantChat() {
         chunk.type === "text"
           ? { ...last, content: last.content + chunk.delta }
           : chunk.type === "ui"
-            ? { ...last, surfaces: [...last.surfaces, chunk.surface] }
-            : { ...last, sources: [...last.sources, { label: chunk.label, value: chunk.value }] };
+            ? {
+                ...last,
+                surfaces: [...surfacesBefore(last.surfaces, chunk.surface), chunk.surface],
+              }
+            : { ...last, steps: mergeStep(last.steps, chunk) };
       return next;
     });
   }
@@ -322,13 +248,12 @@ export function AssistantChat() {
   const lastIndex = messages.length - 1;
 
   return (
-    <div className="flex flex-col gap-3">
-      <section aria-label="Conversation" className="glass flex flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col gap-3">
+      <section aria-label="Conversation" className="flex flex-1 flex-col">
         {messages.length > 0 && (
-          <div className="flex items-center justify-between border-b border-[color:var(--border-glass)] px-5 py-2.5">
+          <div className="flex items-center justify-between border-b border-[color:var(--border-glass)] pb-2">
             <span className="text-xs text-muted-foreground">
-              {messages.filter((message) => message.role === "user").length} question
-              {messages.filter((message) => message.role === "user").length === 1 ? "" : "s"} this session
+              {questionCount} question{questionCount === 1 ? "" : "s"} this session
             </span>
             <Button type="button" variant="ghost" size="sm" onClick={startNewChat} disabled={pending}>
               <RotateCcw />
@@ -336,15 +261,9 @@ export function AssistantChat() {
             </Button>
           </div>
         )}
-        <div
-          ref={scrollRef}
-          role="log"
-          aria-live="polite"
-          aria-busy={pending}
-          className="flex max-h-[62vh] min-h-[40vh] flex-col gap-6 overflow-y-auto p-5 sm:p-7"
-        >
+        <div role="log" aria-live="polite" aria-busy={pending} className="flex flex-1 flex-col gap-6 py-6">
           {messages.length === 0 ? (
-            <div className="flex flex-col gap-4">
+            <div className="glass flex flex-col gap-4 p-5 sm:p-7">
               <p className="text-muted-foreground">
                 Ask a question about your YouTrack project data — or pick one of these to start.
               </p>
@@ -353,41 +272,48 @@ export function AssistantChat() {
           ) : (
             messages.map((message, index) =>
               message.role === "user" ? (
-                <div key={index} className="flex justify-end">
+                // scroll-mt clears the sticky TopNav when scrolled into view.
+                <div
+                  key={index}
+                  ref={index === lastIndex - 1 || index === lastIndex ? lastQuestionRef : undefined}
+                  className="flex scroll-mt-24 justify-end"
+                >
                   <p className="max-w-[80%] rounded-md rounded-br-sm bg-[rgba(255,139,107,0.16)] px-4 py-2.5 whitespace-pre-wrap text-foreground">
                     <span className="sr-only">You: </span>
                     {message.content}
                   </p>
                 </div>
               ) : (
-                <div key={index} className="flex gap-3">
+                // The latest answer reserves most of a screen, so its question
+                // can always scroll to the top even while the answer is short.
+                <div key={index} className={`flex gap-3 ${index === lastIndex ? "min-h-[calc(100dvh-16rem)]" : ""}`}>
                   <AssistantAvatar />
-                  <div className="flex min-w-0 max-w-[72ch] flex-1 flex-col gap-2 pt-0.5">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 pt-0.5">
                     <span className="sr-only">Assistant: </span>
+                    {message.steps.length > 0 && (
+                      <ul aria-label="What the assistant did" className="flex flex-col gap-2">
+                        {message.steps.map((step) => (
+                          <StepLine key={step.id} step={step} />
+                        ))}
+                      </ul>
+                    )}
                     {message.content ? (
-                      <div className="prose-assistant leading-relaxed text-foreground">
+                      <div className="prose-assistant max-w-[72ch] leading-relaxed text-foreground">
                         <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
                       </div>
-                    ) : pending && index === lastIndex ? (
+                    ) : pending && index === lastIndex && !message.steps.some((step) => step.status === "running") ? (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span className="assistant-typing" aria-hidden="true">
                           <span />
                           <span />
                           <span />
                         </span>
-                        {message.sources.length > 0 ? "Reading the results…" : "Checking YouTrack…"}
+                        {message.steps.length > 0 ? "Reading the results…" : "Thinking…"}
                       </p>
                     ) : null}
                     {message.surfaces.map((surface, surfaceIndex) => (
-                      <IssuePicker key={surfaceIndex} surface={surface} />
+                      <AssistantSurface key={surfaceId(surface) || surfaceIndex} surface={surface} onSelectionChange={reportSelection} />
                     ))}
-                    {message.sources.length > 0 && (
-                      <div className="flex flex-col gap-1.5">
-                        {message.sources.map((source, sourceIndex) => (
-                          <SourceBlock key={sourceIndex} source={source} />
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               ),
@@ -408,57 +334,62 @@ export function AssistantChat() {
         </p>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="glass flex items-end gap-2 p-2 transition-shadow focus-within:ring-2 focus-within:ring-ring/50"
-      >
-        {messages.length > 0 && (
+      {/* Composer stays pinned to the bottom of the window while the page scrolls. */}
+      {/* Blur (not a solid fill) so the fixed canvas mesh shows through; masked
+          so scrolled content fades out softly above the composer. */}
+      <div className="sticky bottom-0 z-10 flex flex-col gap-2 pt-4 pb-4 backdrop-blur-md [mask-image:linear-gradient(to_bottom,transparent,black_1rem)]">
+        <form
+          onSubmit={handleSubmit}
+          className="glass flex items-end gap-2 p-2 transition-shadow focus-within:ring-2 focus-within:ring-ring/50"
+        >
+          {messages.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-lg"
+              onClick={() => setShowHelp((prev) => !prev)}
+              aria-expanded={showHelp}
+              aria-controls="assistant-help"
+              aria-label="What can I ask?"
+              title="What can I ask?"
+              className="rounded-full"
+            >
+              <CircleHelp className="size-5" />
+            </Button>
+          )}
+          <label htmlFor="assistant-input" className="sr-only">
+            Ask the assistant
+          </label>
+          <textarea
+            id="assistant-input"
+            ref={inputRef}
+            rows={1}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter sends, Shift+Enter adds a line -- the chat-tool default.
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+              }
+            }}
+            placeholder="Ask about issues, people, or projects…"
+            disabled={pending}
+            className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-foreground [field-sizing:content] placeholder:text-[color:var(--ink-muted)] focus:outline-none disabled:opacity-60"
+          />
           <Button
-            type="button"
-            variant="ghost"
+            type="submit"
             size="icon-lg"
-            onClick={() => setShowHelp((prev) => !prev)}
-            aria-expanded={showHelp}
-            aria-controls="assistant-help"
-            aria-label="What can I ask?"
-            title="What can I ask?"
+            disabled={pending || !input.trim()}
+            aria-label={pending ? "Asking…" : "Send"}
+            title="Send (Enter)"
             className="rounded-full"
           >
-            <CircleHelp className="size-5" />
+            <ArrowUp className="size-5" />
           </Button>
-        )}
-        <label htmlFor="assistant-input" className="sr-only">
-          Ask the assistant
-        </label>
-        <textarea
-          id="assistant-input"
-          ref={inputRef}
-          rows={1}
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={(event) => {
-            // Enter sends, Shift+Enter adds a line -- the chat-tool default.
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
-          }}
-          placeholder="Ask about issues, people, or projects…"
-          disabled={pending}
-          className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-foreground [field-sizing:content] placeholder:text-[color:var(--ink-muted)] focus:outline-none disabled:opacity-60"
-        />
-        <Button
-          type="submit"
-          size="icon-lg"
-          disabled={pending || !input.trim()}
-          aria-label={pending ? "Asking…" : "Send"}
-          title="Send (Enter)"
-          className="rounded-full"
-        >
-          <ArrowUp className="size-5" />
-        </Button>
-      </form>
-      <p className="px-1 text-xs text-muted-foreground">Enter to send · Shift+Enter for a new line</p>
+        </form>
+        <p className="px-1 text-xs text-muted-foreground">Enter to send · Shift+Enter for a new line</p>
+      </div>
     </div>
   );
 }

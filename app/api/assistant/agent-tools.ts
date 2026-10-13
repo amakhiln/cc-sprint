@@ -1,12 +1,14 @@
 // App-local assistant tools (agent mode), bound to the real data sources. The
-// logic lives in agent-tool-logic.ts. Both tools are read-only: adding to the
-// Sprint only ever happens when the PM clicks Add in the picker
-// (app/actions/assistant-sprint.ts). Never imported by app/share/[token]/.
+// logic lives in agent-tool-logic.ts. list/show are read-only;
+// add_issues_to_sprint goes through the picker's own Add path
+// (app/actions/assistant-sprint.ts). Nothing ever writes to YouTrack.
+// Never imported by app/share/[token]/.
 import { listBacklogIssues } from "@/domain/youtrack";
 import { youTrackConfigRepository } from "@/infrastructure/youtrack/config";
 import { youTrackIssuesAdapter } from "@/infrastructure/youtrack/issues";
 import { sprintRepository } from "@/infrastructure/db/sprint-repository";
 import { backlogIssueRepository } from "@/infrastructure/db/backlog-issue-repository";
+import { addIssuesToActiveSprintAction } from "@/app/actions/assistant-sprint";
 import { runAgentToolWith, type BacklogState } from "./agent-tool-logic.ts";
 
 // Shared with the Add-to-sprint Server Action so both apply the exact same
@@ -32,5 +34,5 @@ export async function loadBacklogState(): Promise<BacklogState> {
 // every tool call in that turn (list, then picker) instead of once per call.
 export function createAgentToolExecutor() {
   let state: Promise<BacklogState> | null = null;
-  return runAgentToolWith(() => (state ??= loadBacklogState()));
+  return runAgentToolWith(() => (state ??= loadBacklogState()), addIssuesToActiveSprintAction);
 }

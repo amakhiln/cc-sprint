@@ -12,11 +12,11 @@ import {
   type AssistantMessage,
   type AssistantTool,
 } from "@/infrastructure/query-assistant/client";
-import { isClientMessage } from "./is-client-message.ts";
+import { isClientMessage, tickedIdsNote } from "./is-client-message.ts";
 import { createAgentToolExecutor } from "./agent-tools.ts";
 import { composeTools } from "./agent-tool-logic.ts";
 
-const MODEL = "openai/gpt-oss-120b";
+const MODEL = "qwen/qwen3.8-27b";
 
 // Overall wall-clock bound for the whole request, on top of the fixed
 // per-call timeouts already inside runAssistantTurn (Groq) and
@@ -24,11 +24,21 @@ const MODEL = "openai/gpt-oss-120b";
 // cap x each call's own timeout) still can't hang the response indefinitely.
 const REQUEST_TIMEOUT_MS = 60_000;
 
+// ponytail: Groq's free tier caps input tokens per minute (7k on
+// qwen/qwen3.8-27b), and every request resends system prompt + all tool
+// schemas + history. YouTrack's own descriptions are long (search_issues is
+// ~3.3k chars), so clip them, and send only the recent conversation.
+const MAX_TOOL_DESCRIPTION_CHARS = 400;
+const MAX_HISTORY_MESSAGES = 6;
+
 const SYSTEM_PROMPT = [
   "You are an assistant helping a project manager with their YouTrack project data and this app's active Sprint.",
-  "You can never write anything -- not to YouTrack, not to the Sprint. To help the PM add backlog issues to the active Sprint: call list_backlog_issues with the filters they asked for (type, estimate with/without, search), then call show_issue_picker with the ids you chose from that result. The PM ticks rows and clicks Add to sprint themselves.",
-  "Set preselect true on show_issue_picker only when the PM asked to add the issues. Never say issues were added -- only the PM's click adds them.",
-  "After show_issue_picker, don't repeat the issue list in prose -- the picker shows it; just report the count (and how many need an estimate). If list_backlog_issues has returned < total, or backlogTruncated is true, say the list is partial.",
+  "You can never write to YouTrack. The only write you can make is adding backlog issues to this app's active Sprint with add_issues_to_sprint.",
+  "To help the PM find backlog issues: call list_backlog_issues with the filters they asked for (type, estimate with/without, search). Its result is already shown to the PM as a pick list with checkboxes and an Add to sprint button.",
+  "Call add_issues_to_sprint only when the PM's latest message explicitly asks to add issues -- the ones they name, or 'the selected/ticked' ones (use the ticked ids given below). Never add on your own initiative or to issues they didn't ask for. If they ask to add the selected ones and none are ticked, say so.",
+  "After add_issues_to_sprint, report exactly what it returned (added / already in the Sprint / failed with reasons). Never claim an issue was added unless the tool said so.",
+  "Call show_issue_picker only to narrow the pick list to specific ids (e.g. the PM named issues but didn't ask to add them yet).",
+  "Don't repeat the issue list in prose -- the pick list shows it; just report the count (and how many need an estimate). If returned < total, or backlogTruncated is true, say your summary covers only part of the list.",
   "Use list_backlog_issues (not search_issues) for questions about which backlog issues can be pulled, or which lack estimates.",
   "Prefer calling a tool over guessing. Never state a specific figure, count, status, or fact unless a tool call actually returned it.",
   "If no available tool can answer the question, say so plainly instead of inventing an answer.",
@@ -36,7 +46,8 @@ const SYSTEM_PROMPT = [
   "search_issues returns one page of matching issues plus hasNextPage/nextPageOffset -- it has no total-count field.",
   "If asked how many issues match some criteria, page through search_issues using nextPageOffset as the next call's offset, counting issuesPage entries yourself, until hasNextPage is false.",
   "If you run out of tool calls before hasNextPage is false, say the count is incomplete rather than reporting a partial number as the total.",
-  "Never paste raw tool-call JSON into your answer -- always summarize results in plain prose or a markdown list.",
+  "Tool results that contain rows are already shown to the PM as a list under your answer -- don't re-list every row; summarize in a sentence or two (count, notable items, anything partial).",
+  "Never paste raw tool-call JSON into your answer.",
   "When listing issues, include each issue's assignee if the tool result includes one; if it doesn't, say the assignee isn't available rather than guessing.",
 ].join(" ");
 
@@ -103,7 +114,7 @@ export async function POST(request: Request) {
     const registry = await getReadOnlyToolRegistry(config);
     mcpTools = registry.map((tool) => ({
       name: tool.name,
-      description: tool.description,
+      description: tool.description?.slice(0, MAX_TOOL_DESCRIPTION_CHARS),
       parameters: (tool.inputSchema as Record<string, unknown> | undefined) ?? {},
     }));
   } catch (error) {
@@ -121,7 +132,10 @@ export async function POST(request: Request) {
       const turn = runAssistantTurn({
         apiKey,
         model: MODEL,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...clientMessages],
+        messages: [
+          { role: "system", content: `${SYSTEM_PROMPT} ${tickedIdsNote((body as { selectedIssueIds?: unknown }).selectedIssueIds)}` },
+          ...clientMessages.slice(-MAX_HISTORY_MESSAGES),
+        ],
         tools,
         executeTool,
       });
