@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect, useTransition, type MouseEvent } from "react";
 import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/status-chip";
@@ -175,6 +175,21 @@ export function BacklogPanel({
       }
       return next;
     });
+  }
+
+  // Clicking anywhere on a selectable card toggles its checkbox. The checkbox
+  // stays the keyboard/screen-reader control; this is a bigger mouse target.
+  function selectOnCardClick(id: string, enabled: boolean) {
+    if (!enabled) return undefined;
+    return (event: MouseEvent<HTMLElement>) => {
+      // The card's own controls (checkbox, sub-items toggle, assignee picker)
+      // handle their clicks; dragging to copy text isn't a selection either.
+      if ((event.target as HTMLElement).closest("input, button, select, a, label")) return;
+      if (window.getSelection()?.toString()) return;
+      // A sub-item row sits inside its parent's card.
+      event.stopPropagation();
+      toggleSelected(id);
+    };
   }
 
   function toggleSubItems(parentId: string) {
@@ -471,8 +486,15 @@ export function BacklogPanel({
                 const isParent = rolledUp !== undefined;
                 const canSelect = !!activeSprintId && !pulledInfo && !isParent;
                 const missingEstimate = canSelect && !hasValidEstimate(issue.id);
+                const clickable = canSelect && !missingEstimate && !pulling;
                 return (
-                  <li key={issue.id} className="glass-row flex flex-col gap-1.5 px-4 py-3">
+                  <li
+                    key={issue.id}
+                    onClick={selectOnCardClick(issue.id, clickable)}
+                    className={`glass-row flex flex-col gap-1.5 px-4 py-3 ${clickable ? "cursor-pointer" : ""} ${
+                      isSelected ? "ring-1 ring-[color:var(--accent-peach)]" : ""
+                    }`}
+                  >
                     <div className="flex items-center gap-2">
                       {canSelect && (
                         <input
@@ -562,8 +584,15 @@ export function BacklogPanel({
                                 !!activeSprintId &&
                                 !pulledByYoutrackId.has(child.id) &&
                                 state.rollups[child.id] === undefined;
+                              const childClickable = childSelectable && hasValidEstimate(child.id) && !pulling;
                               return (
-                              <li key={child.id} className="flex flex-col gap-0.5">
+                              <li
+                                key={child.id}
+                                onClick={selectOnCardClick(child.id, childClickable)}
+                                className={`-mx-1.5 flex flex-col gap-0.5 rounded-sm px-1.5 py-0.5 ${
+                                  childClickable ? "cursor-pointer hover:bg-[color:var(--surface-glass)]" : ""
+                                } ${selected.has(child.id) ? "bg-[color:var(--surface-glass)]" : ""}`}
+                              >
                                 <div className="flex items-center justify-between gap-3">
                                   <span className="flex items-center gap-2">
                                     {childSelectable && (
