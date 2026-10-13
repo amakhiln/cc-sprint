@@ -241,6 +241,7 @@ export function BacklogPanel({
   }
 
   const selectedValid = Array.from(selected).filter(hasValidEstimate);
+  const selectedHours = selectedValid.reduce((sum, id) => sum + (issueById.get(id)?.estimateHours ?? 0), 0);
   const canPull = selectedValid.length > 0 && !pulling;
 
   const availableTypes =
@@ -666,7 +667,7 @@ export function BacklogPanel({
         <div className="glass-strong sticky bottom-4 mt-5 flex items-center gap-3 px-4 py-3">
           {activeSprintId ? (
             <Button type="button" disabled={!canPull} onClick={handlePullSelected}>
-              {pulling ? "Pulling…" : `Pull Selected (${selectedValid.length})`}
+              {pulling ? "Pulling…" : `Pull Selected (${selectedValid.length} · ${selectedHours.toFixed(1)}h)`}
             </Button>
           ) : (
             <p className="text-sm text-muted-foreground">Create a Sprint to pull issues.</p>
