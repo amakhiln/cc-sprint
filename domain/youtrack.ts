@@ -135,3 +135,67 @@ export function filterBacklogIssues(
       (search === null || issue.id.toLowerCase().includes(search) || issue.summary.toLowerCase().includes(search)),
   );
 }
+
+// A sprint on the configured YouTrack agile board. start/finish are epoch ms
+// (verified live: start at 00:00:00.000Z, finish at 23:59:59.999Z), null when
+// the sprint has no dates set.
+export type YouTrackSprint = {
+  id: string;
+  name: string;
+  start: number | null;
+  finish: number | null;
+  archived: boolean;
+};
+
+export type ListSprintsResult =
+  | { ok: true; data: YouTrackSprint[] }
+  | { ok: false; error: string };
+
+export type YouTrackSprintsPort = {
+  listSprints(config: YouTrackConfig, boardId: string): Promise<ListSprintsResult>;
+};
+
+// What the Create Sprint form pre-fills from: startDate is YYYY-MM-DD (UTC
+// calendar date), lengthDays the inclusive day count -- the same inclusive
+// formula createSprint uses for endDate, so the saved range matches YouTrack's.
+export type SprintSuggestion = {
+  youtrackSprintId: string;
+  name: string;
+  startDate: string;
+  lengthDays: number;
+};
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function utcDay(ms: number): number {
+  return Math.floor(ms / MS_PER_DAY);
+}
+
+// Sprints the PM can still create locally: dated, not archived, not already
+// linked to a local Sprint, and finishing after today (a sprint in its last
+// day counts as over) -- earliest start first.
+export function selectableSprints(
+  sprints: YouTrackSprint[],
+  importedIds: Iterable<string>,
+  today: Date,
+): SprintSuggestion[] {
+  const imported = new Set(importedIds);
+  const todayDay = utcDay(today.getTime());
+  return sprints
+    .filter(
+      (s): s is YouTrackSprint & { start: number; finish: number } =>
+        typeof s.start === "number" &&
+        typeof s.finish === "number" &&
+        !s.archived &&
+        !imported.has(s.id) &&
+        utcDay(s.finish) > todayDay &&
+        utcDay(s.finish) >= utcDay(s.start),
+    )
+    .sort((a, b) => a.start - b.start)
+    .map((s) => ({
+      youtrackSprintId: s.id,
+      name: s.name,
+      startDate: new Date(utcDay(s.start) * MS_PER_DAY).toISOString().slice(0, 10),
+      lengthDays: utcDay(s.finish) - utcDay(s.start) + 1,
+    }));
+}

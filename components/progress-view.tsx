@@ -107,6 +107,7 @@ export function ProgressView({ data }: { data: ProgressData | null }) {
           Progress
         </h1>
         <span className="rounded-full border border-[color:var(--border-glass)] bg-[color:var(--surface-glass)] px-3 py-1 text-xs font-medium text-muted-foreground">
+          {sprint.name && `${sprint.name} · `}
           {formatDate(sprint.startDate)} – {formatDate(sprint.endDate)}
         </span>
       </div>

@@ -6,6 +6,7 @@ import { shareTokenRepository } from "@/infrastructure/db/share-token-repository
 import { teamMemberRepository } from "@/infrastructure/db/team-member-repository";
 import { CreateSprintForm } from "./sprint/create-sprint-form";
 import { CloseSprintDialog } from "@/app/close-sprint-dialog";
+import { loadSprintSuggestion } from "@/app/sprint-suggestion-data";
 
 // Sprint dates are stored as UTC midnight (day-granularity, no time-of-day)
 // -- format in UTC so the displayed day never shifts with the viewer's local
@@ -38,7 +39,10 @@ export default async function SprintPlanOverviewPage() {
   const [data, shareToken] = await Promise.all([getSprintPlanData(), shareTokenRepository.getOrCreate()]);
 
   if (!data) {
-    const teamMembers = await teamMemberRepository.list();
+    const [teamMembers, { suggestion, loadFailed }] = await Promise.all([
+      teamMemberRepository.list(),
+      loadSprintSuggestion(),
+    ]);
     return (
       <div className="mx-auto w-full max-w-2xl px-6 pt-6 pb-12">
         <div className="mb-6 flex items-center justify-between gap-4 border-b border-[color:var(--border-glass)] pb-5">
@@ -69,7 +73,7 @@ export default async function SprintPlanOverviewPage() {
         )}
         <section className="glass p-6 sm:p-8">
           <p className="mb-6 text-muted-foreground">No active Sprint yet — create one to start planning.</p>
-          <CreateSprintForm />
+          <CreateSprintForm suggestion={suggestion} loadFailed={loadFailed} />
         </section>
       </div>
     );
@@ -90,7 +94,7 @@ export default async function SprintPlanOverviewPage() {
           </h1>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border-glass)] bg-[color:var(--surface-glass)] px-3 py-1 text-xs font-medium text-muted-foreground">
             <CalendarRange className="size-3.5" />
-            Day {day} of {totalDays} · {formatDate(data.activeSprint.startDate)} – {formatDate(data.activeSprint.endDate)}
+            Day {day} of {totalDays} · {data.activeSprint.name && `${data.activeSprint.name} · `}{formatDate(data.activeSprint.startDate)} – {formatDate(data.activeSprint.endDate)}
           </span>
         </div>
         <div className="flex items-center gap-3">

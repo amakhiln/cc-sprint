@@ -94,7 +94,7 @@ export type SprintPlanAssignedIssue = {
 };
 
 export type SprintPlanData = {
-  activeSprint: { id: string; startDate: Date; endDate: Date };
+  activeSprint: { id: string; name: string | null; startDate: Date; endDate: Date };
   devCategoryExists: boolean;
   team: {
     capacityHours: number;
@@ -192,7 +192,12 @@ export async function getSprintPlanData(): Promise<SprintPlanData | null> {
   }
 
   return {
-    activeSprint: { id: activeSprint.id, startDate: activeSprint.startDate, endDate: activeSprint.endDate },
+    activeSprint: {
+      id: activeSprint.id,
+      name: activeSprint.name,
+      startDate: activeSprint.startDate,
+      endDate: activeSprint.endDate,
+    },
     devCategoryExists: Boolean(devCategory),
     team: {
       capacityHours: teamCapacity.capacityHours,

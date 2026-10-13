@@ -17,6 +17,13 @@ export const sprintRepository: SprintRepo = {
     // result as the pre-check.
     return prisma.sprint.create({ data });
   },
+  async listImportedYouTrackIds() {
+    const rows = await prisma.sprint.findMany({
+      where: { youtrackSprintId: { not: null } },
+      select: { youtrackSprintId: true },
+    });
+    return rows.map((row) => row.youtrackSprintId as string);
+  },
   listClosed() {
     // id as a secondary tiebreaker -- startDate has no uniqueness
     // constraint, so two closed Sprints could share one (e.g. unusual/

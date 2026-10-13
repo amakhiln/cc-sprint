@@ -14,3 +14,10 @@ export const youTrackConfigRepository: YouTrackConfigRepo = {
     return { instanceUrl, projectId, authToken };
   },
 };
+
+// Optional, and deliberately outside get()'s required trio: a missing board
+// ID only disables the Create Sprint pre-fill, never the issue connection.
+// Set explicitly because the project sits on several agile boards.
+export function getAgileBoardId(): string | null {
+  return process.env.YOUTRACK_AGILE_BOARD_ID?.trim() || null;
+}

@@ -77,6 +77,7 @@ export default async function LeavePage() {
           <h2 className="font-heading text-xl font-medium text-foreground">Leave this Sprint</h2>
           {activeSprint && (
             <p className="text-sm text-muted-foreground">
+              {activeSprint.name && <span className="text-foreground">{activeSprint.name} · </span>}
               {formatDate(activeSprint.startDate)} – {formatDate(activeSprint.endDate)}
             </p>
           )}

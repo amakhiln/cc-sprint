@@ -12,6 +12,8 @@ import assert from "node:assert/strict";
 import {
   filterBacklogIssues,
   listBacklogIssues,
+  selectableSprints,
+  type YouTrackSprint,
   type YouTrackConfig,
   type YouTrackConfigRepo,
   type YouTrackIssuesPort,
@@ -118,6 +120,34 @@ async function main() {
     assert.deepEqual(ids({ estimate: "any", search: "login" }), ["P-4"]);
     assert.deepEqual(ids({ search: "p-3" }), ["P-3"]);
     assert.deepEqual(ids({ type: "Epic" }), []);
+  }
+
+  // selectableSprints -- live shape: start at 00:00:00.000Z, finish at
+  // 23:59:59.999Z the last day. Oct 15..Oct 28 = 14 inclusive days.
+  {
+    const day = (iso: string) => Date.parse(`${iso}T00:00:00.000Z`);
+    const end = (iso: string) => Date.parse(`${iso}T23:59:59.999Z`);
+    const sprint = (id: string, start: number | null, finish: number | null, archived = false): YouTrackSprint => ({
+      id, name: `Sprint ${id}`, start, finish, archived,
+    });
+    const today = new Date("2026-10-13T15:00:00Z");
+    const result = selectableSprints(
+      [
+        sprint("23", day("2026-10-29"), end("2026-11-11")),
+        sprint("22", day("2026-10-15"), end("2026-10-28")),
+        sprint("21", day("2026-10-01"), end("2026-10-12")), // finished yesterday
+        sprint("20", day("2026-09-30"), end("2026-10-13")), // finishes today -- counts as over
+        sprint("19", day("2026-10-14"), end("2026-10-27")), // already imported
+        sprint("18", null, null), // undated
+        sprint("17", day("2026-10-14"), null), // no finish
+        sprint("16", day("2026-10-14"), end("2026-10-27"), true), // archived
+      ],
+      ["19"],
+      today,
+    );
+    assert.deepEqual(result.map((s) => s.youtrackSprintId), ["22", "23"], "sorted by start, filtered");
+    assert.deepEqual(result[0], { youtrackSprintId: "22", name: "Sprint 22", startDate: "2026-10-15", lengthDays: 14 });
+    assert.deepEqual(selectableSprints([], [], today), []);
   }
 
   console.log("youtrack.selfcheck: all assertions passed");

@@ -45,9 +45,14 @@ export async function createSprintAction(
   // no-time-of-day field, no timezone conversion needed.
   const startDate = new Date(startDateRaw);
   const lengthDays = lengthDaysRaw !== "" ? Number(lengthDaysRaw) : undefined;
+  // Optional -- trimmed and empty -> null inside createSprint.
+  const nameRaw = formData.get("name");
+  const youtrackSprintIdRaw = formData.get("youtrackSprintId");
+  const name = typeof nameRaw === "string" ? nameRaw : null;
+  const youtrackSprintId = typeof youtrackSprintIdRaw === "string" ? youtrackSprintIdRaw : null;
 
   try {
-    const result = await createSprint(sprintRepository, { startDate, lengthDays });
+    const result = await createSprint(sprintRepository, { startDate, lengthDays, name, youtrackSprintId });
 
     if (result.ok) {
       try {
