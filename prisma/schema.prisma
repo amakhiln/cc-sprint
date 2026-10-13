@@ -48,6 +48,11 @@ model Sprint {
   endDate   DateTime     @db.Date
   status    SprintStatus @default(active)
 
+  // Pulled from the YouTrack agile board when the Sprint is created. Null for
+  // Sprints created manually or before this existed -- shown as the date range.
+  name             String?
+  youtrackSprintId String? @unique
+
   // Nullable until Close Sprint (Story 4.2) populates them. Float (not Int,
   // Story 4.2's own fix to the original scaffolding) -- matches every other
   // hours figure in this schema (BacklogIssue.estimateHours/loggedHours,

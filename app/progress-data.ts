@@ -31,7 +31,7 @@ export type ProgressIssue = IssueProgress & {
 export type ProgressMember = ProgressTotals & { key: string; name: string };
 
 export type ProgressData = {
-  sprint: { startDate: Date; endDate: Date };
+  sprint: { name: string | null; startDate: Date; endDate: Date };
   // false when YouTrack isn't configured or the work-item fetch failed --
   // the page shows that instead of rendering every issue as 0h logged.
   loggedAvailable: boolean;
@@ -94,7 +94,7 @@ export async function getProgressData(): Promise<ProgressData | null> {
   }));
 
   return {
-    sprint: { startDate: sprint.startDate, endDate: sprint.endDate },
+    sprint: { name: sprint.name, startDate: sprint.startDate, endDate: sprint.endDate },
     loggedAvailable: logs !== null,
     totals: sumProgress(issues),
     members,

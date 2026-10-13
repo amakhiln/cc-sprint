@@ -11,9 +11,9 @@ import { createSprint, closeSprint, type Sprint, type SprintRepo } from "./sprin
 // --- fake in-memory repo, matching the port shape ---
 
 function makeFakeSprintRepo(active: Sprint | null = null): SprintRepo & {
-  created: { startDate: Date; endDate: Date }[];
+  created: Parameters<SprintRepo["create"]>[0][];
 } {
-  const created: { startDate: Date; endDate: Date }[] = [];
+  const created: Parameters<SprintRepo["create"]>[0][] = [];
   return {
     created,
     async findActive() {
@@ -26,6 +26,8 @@ function makeFakeSprintRepo(active: Sprint | null = null): SprintRepo & {
         startDate: data.startDate,
         endDate: data.endDate,
         status: "active",
+        name: data.name,
+        youtrackSprintId: data.youtrackSprintId,
         snapshotCapacityHours: null,
         snapshotAllocationBreakdown: null,
         snapshotActualVelocityHours: null,
@@ -33,6 +35,9 @@ function makeFakeSprintRepo(active: Sprint | null = null): SprintRepo & {
     },
     async close() {
       throw new Error("not used by these tests");
+    },
+    async listImportedYouTrackIds() {
+      return [];
     },
     async listClosed() {
       throw new Error("not used by these tests");
@@ -59,6 +64,8 @@ function makeFakeCloseRepo(sprintId: string): SprintRepo & {
         startDate: new Date("2026-08-17"),
         endDate: new Date("2026-08-28"),
         status: "active",
+        name: null,
+        youtrackSprintId: null,
         snapshotCapacityHours: null,
         snapshotAllocationBreakdown: null,
         snapshotActualVelocityHours: null,
@@ -78,10 +85,15 @@ function makeFakeCloseRepo(sprintId: string): SprintRepo & {
         startDate: new Date("2026-08-17"),
         endDate: new Date("2026-08-28"),
         status: "closed",
+        name: null,
+        youtrackSprintId: null,
         snapshotCapacityHours: data.snapshotCapacityHours,
         snapshotAllocationBreakdown: data.snapshotAllocationBreakdown,
         snapshotActualVelocityHours: data.snapshotActualVelocityHours,
       };
+    },
+    async listImportedYouTrackIds() {
+      return [];
     },
     async listClosed() {
       throw new Error("not used by these tests");
@@ -92,18 +104,22 @@ function makeFakeCloseRepo(sprintId: string): SprintRepo & {
 // A repo whose create() throws a real-Prisma-shaped P2002 error, to verify
 // the duck-typed isUniqueConstraintViolation check without importing
 // @prisma/client into this framework-free domain file.
-function makeP2002ThrowingRepo(): SprintRepo {
+function makeP2002ThrowingRepo(meta?: unknown): SprintRepo {
   return {
     async findActive() {
       return null;
     },
     async create() {
-      const error = new Error("Unique constraint failed") as Error & { code: string };
+      const error = new Error("Unique constraint failed") as Error & { code: string; meta?: unknown };
       error.code = "P2002";
+      error.meta = meta;
       throw error;
     },
     async close() {
       throw new Error("not used by these tests");
+    },
+    async listImportedYouTrackIds() {
+      return [];
     },
     async listClosed() {
       throw new Error("not used by these tests");
@@ -156,6 +172,8 @@ async function main() {
       startDate: new Date("2026-08-01"),
       endDate: new Date("2026-08-14"),
       status: "active",
+      name: null,
+      youtrackSprintId: null,
       snapshotCapacityHours: null,
       snapshotAllocationBreakdown: null,
       snapshotActualVelocityHours: null,
@@ -286,6 +304,37 @@ async function main() {
     });
     assert.equal(notFinite.ok, false, "NaN logged hours should be rejected");
     assert.equal(repo.closeCalls.length, 0, "the repo should never be called for rejected input");
+  }
+
+  // 9. YOUTRACK_ID_USED -- P2002 on youtrackSprintId routes to its own
+  // message, in both the classic meta.target shape and the Prisma 7
+  // driver-adapter shape; the status index still maps to "already active".
+  {
+    for (const meta of [
+      { target: ["youtrackSprintId"] },
+      { modelName: "Sprint", driverAdapterError: { cause: { kind: "UniqueConstraintViolation", constraint: { index: "Sprint_youtrackSprintId_key" } } } },
+    ]) {
+      const result = await createSprint(makeP2002ThrowingRepo(meta), { startDate: new Date("2026-10-15"), youtrackSprintId: "1-2" });
+      assert.ok(!result.ok);
+      assert.equal(result.error, "This YouTrack sprint was already used.");
+    }
+    const status = await createSprint(makeP2002ThrowingRepo({ target: ["status"] }), { startDate: new Date("2026-10-15") });
+    assert.ok(!status.ok);
+    assert.match(status.error, /already active/);
+  }
+
+  // 10. name/youtrackSprintId are trimmed, blank -> null, and persisted.
+  {
+    const repo = makeFakeSprintRepo();
+    await createSprint(repo, { startDate: new Date("2026-10-15"), name: "  Sprint 22 ", youtrackSprintId: "121-9" });
+    const blank = makeFakeSprintRepo();
+    await createSprint(blank, { startDate: new Date("2026-10-15"), name: "  ", youtrackSprintId: "" });
+    assert.equal(repo.created[0].name, "Sprint 22");
+    assert.equal(repo.created[0].youtrackSprintId, "121-9");
+    assert.equal(blank.created[0].name, null);
+    assert.equal(blank.created[0].youtrackSprintId, null);
+    const tooLong = await createSprint(makeFakeSprintRepo(), { startDate: new Date("2026-10-15"), name: "x".repeat(101) });
+    assert.equal(tooLong.ok, false, "an over-long name should be rejected");
   }
 
   console.log("sprint.selfcheck: all assertions passed");

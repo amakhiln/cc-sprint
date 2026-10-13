@@ -6,6 +6,10 @@ import type { CategoryHours } from "./capacity.ts";
 
 export type Sprint = {
   id: string;
+  // null for manually created / pre-sync Sprints -- display falls back to
+  // the date range.
+  name: string | null;
+  youtrackSprintId: string | null;
   startDate: Date;
   endDate: Date;
   status: "active" | "closed";
@@ -16,7 +20,10 @@ export type Sprint = {
 
 export type SprintRepo = {
   findActive(): Promise<Sprint | null>;
-  create(data: { startDate: Date; endDate: Date }): Promise<Sprint>;
+  create(data: { startDate: Date; endDate: Date; name: string | null; youtrackSprintId: string | null }): Promise<Sprint>;
+  // youtrackSprintIds already linked to a Sprint -- excluded from the Create
+  // Sprint pre-fill.
+  listImportedYouTrackIds(): Promise<string[]>;
   // Story 4.2 -- one atomic, transactional write: every confirmed issue's
   // loggedHours alongside the Sprint's own status flip + snapshot fields.
   // Scoped to status: 'active' in the same query as the write (mirrors
@@ -40,6 +47,8 @@ export type SprintRepo = {
 export type CreateSprintInput = {
   startDate: Date;
   lengthDays?: number;
+  name?: string | null;
+  youtrackSprintId?: string | null;
 };
 
 export type CreateSprintResult =
@@ -48,9 +57,11 @@ export type CreateSprintResult =
 
 const DEFAULT_LENGTH_DAYS = 14;
 const MAX_LENGTH_DAYS = 365;
+const MAX_NAME_LENGTH = 100;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const ALREADY_ACTIVE_ERROR =
   "A Sprint is already active. Close it before starting a new one.";
+const YOUTRACK_SPRINT_USED_ERROR = "This YouTrack sprint was already used.";
 
 // Duck-typed check for Prisma's unique-constraint violation code -- avoids
 // importing @prisma/client into this framework-free domain file (AD-1).
@@ -61,6 +72,21 @@ function isUniqueConstraintViolation(error: unknown): boolean {
     "code" in error &&
     (error as { code?: unknown }).code === "P2002"
   );
+}
+
+// Which unique constraint fired. Classic Prisma puts the columns in
+// meta.target; Prisma 7 driver adapters nest them (or the index name,
+// "Sprint_youtrackSprintId_key") under meta.driverAdapterError and the
+// message. Searching all three for the column name covers every shape.
+function uniqueTargetIncludes(error: unknown, column: string): boolean {
+  const { meta, message } = error as { meta?: unknown; message?: unknown };
+  let metaText = "";
+  try {
+    metaText = JSON.stringify(meta) ?? "";
+  } catch {
+    // circular meta -- fall back to the message alone
+  }
+  return `${metaText} ${String(message ?? "")}`.includes(column);
 }
 
 export async function createSprint(
@@ -79,6 +105,10 @@ export async function createSprint(
     };
   }
 
+  if ((input.name?.trim().length ?? 0) > MAX_NAME_LENGTH) {
+    return { ok: false, error: `Name must be at most ${MAX_NAME_LENGTH} characters` };
+  }
+
   // Friendly pre-check -- the primary UX path (AD-6). The partial unique
   // index on Sprint.status is the atomic backstop for the race window
   // between this check and the write below.
@@ -91,10 +121,18 @@ export async function createSprint(
   const endDate = new Date(input.startDate.getTime() + (lengthDays - 1) * MS_PER_DAY);
 
   try {
-    const data = await repo.create({ startDate: input.startDate, endDate });
+    const data = await repo.create({
+      startDate: input.startDate,
+      endDate,
+      name: input.name?.trim() || null,
+      youtrackSprintId: input.youtrackSprintId?.trim() || null,
+    });
     return { ok: true, data };
   } catch (error) {
     if (isUniqueConstraintViolation(error)) {
+      if (uniqueTargetIncludes(error, "youtrackSprintId")) {
+        return { ok: false, error: YOUTRACK_SPRINT_USED_ERROR };
+      }
       // The partial unique index fired -- a concurrent request won the race
       // between our pre-check and this write. Same rejection as the
       // pre-check case rather than letting it throw.

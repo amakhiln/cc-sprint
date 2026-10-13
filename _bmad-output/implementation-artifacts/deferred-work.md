@@ -341,3 +341,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-2-ask-the-assistant-about-youtrack-data.md`
   summary: A model-issued tool call's JSON arguments are never validated against the tool's own declared `inputSchema` before being sent to `callAllowedTool`/the real MCP `callTool` — malformed-but-parseable arguments (e.g. wrong types, missing required fields) are left entirely to the MCP server to reject.
   evidence: Blind Hunter review flagged this. The MCP server is already the schema authority for its own tools and returns a normal tool-error result for bad arguments (handled by the existing `result.isError` path), so this is defense-in-depth rather than a gap that lets anything unsafe through. Low priority; revisit only if malformed-argument tool errors turn out to be a frequent, confusing failure mode in practice.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-youtrack-sprint-sync.md`
+  summary: `uniqueTargetIncludes` (domain/sprint.ts) has only been tested against hand-built P2002 errors. A duplicate `youtrackSprintId` may surface as "A Sprint is already active" if the real Prisma 7 adapter-pg error doesn't expose the column in `meta` or the message.
+  evidence: Verification-gap review, unverified (maybe-false, medium if true). The create is still rejected, so only the message would be wrong. Settle it by inserting a duplicate `youtrackSprintId` via `sprintRepository.create` in the pm_test schema (synthetic data) and checking that `createSprint` returns "This YouTrack sprint was already used."
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-youtrack-sprint-sync.md`
+  summary: There is no self-check showing that `createSprintAction` passes `name`/`youtrackSprintId` from FormData into `createSprint`.
+  evidence: Verification-gap review. The action imports next/cache and Prisma, and the repo has no action-level test setup. Close it by extracting the FormData parsing into a small pure function with a self-check, or by a real-DB check in pm_test.
