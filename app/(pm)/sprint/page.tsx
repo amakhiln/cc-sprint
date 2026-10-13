@@ -5,7 +5,7 @@ import { backlogIssueRepository } from "@/infrastructure/db/backlog-issue-reposi
 import { teamMemberRepository } from "@/infrastructure/db/team-member-repository";
 import { loadSprintSuggestion } from "@/app/sprint-suggestion-data";
 import { CreateSprintForm } from "./create-sprint-form";
-import { BacklogDrawer } from "./backlog-drawer";
+import { BacklogPanel } from "./backlog-panel";
 
 function formatDate(date: Date): string {
   // Sprint dates are stored as UTC midnight (day-granularity, no
@@ -45,13 +45,6 @@ export default async function SprintPage() {
         >
           Backlog
         </h1>
-        {/* Story 3.2 -- browsing only requires a saved YouTrack connection,
-            not an active Sprint, so this renders regardless of Sprint state. */}
-        <BacklogDrawer
-          activeSprintId={activeSprint?.id ?? null}
-          pulledIssues={pulledIssues}
-          teamMembers={teamMembers.map((member) => ({ id: member.id, name: member.name }))}
-        />
       </div>
 
       {activeSprint ? (
@@ -94,6 +87,14 @@ export default async function SprintPage() {
           <CreateSprintForm suggestion={suggestion} loadFailed={loadFailed} />
         </section>
       )}
+
+      {/* Story 3.2 -- browsing only requires a saved YouTrack connection,
+          not an active Sprint, so this renders regardless of Sprint state. */}
+      <BacklogPanel
+        activeSprintId={activeSprint?.id ?? null}
+        pulledIssues={pulledIssues}
+        teamMembers={teamMembers.map((member) => ({ id: member.id, name: member.name }))}
+      />
     </div>
   );
 }
