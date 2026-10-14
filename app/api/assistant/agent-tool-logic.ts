@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import {
   filterBacklogIssues,
   hasPullableEstimate,
+  suggestSprintFit,
   type BacklogFilter,
   type YouTrackIssueSummary,
 } from "../../../domain/youtrack.ts";
@@ -98,6 +99,19 @@ export const AGENT_TOOLS: AssistantTool[] = [
     description:
       "This app's closed Sprints, most recent first: snapshot capacity, planned and actual velocity hours, delta (latest 12), and the average delta over all `total` of them.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "suggest_sprint_fit",
+    description:
+      "Pick estimated backlog issues that fit the active Sprint's remaining capacity (target % of capacity, default 100). Shows them pre-ticked; adds nothing. Returns the hour totals.",
+    parameters: {
+      type: "object",
+      properties: {
+        targetPercent: { type: "number", description: "Fill to this % of capacity, 1-100. Default 100." },
+        prioritizeTypes: { type: "array", items: { type: "string" }, description: "YouTrack Type values to consider first, in order, e.g. [\"Bug\"]." },
+      },
+      additionalProperties: false,
+    },
   },
   {
     name: "get_leave",
@@ -301,6 +315,53 @@ async function runAppTool(name: string, args: Record<string, unknown>, data: App
   };
 }
 
+// Budget = capacity x target% - every pulled issue's estimate (team.assignedHours).
+// The domain picks and sums; the model only narrates the rounded totals.
+function runSprintFit(
+  args: Record<string, unknown>,
+  targetPercent: number,
+  pullable: YouTrackIssueSummary[],
+  backlogTruncated: boolean,
+  plan: SprintPlanData,
+  hasActiveSprint: boolean,
+): ToolOutcome {
+  // A lone string ("Bug") is common model output -- treat it as a one-item list.
+  const rawTypes = typeof args.prioritizeTypes === "string" ? [args.prioritizeTypes] : args.prioritizeTypes;
+  const prioritizeTypes = Array.isArray(rawTypes) ? rawTypes.filter((type): type is string => typeof type === "string") : [];
+  const budgetHours = (plan.team.capacityHours * targetPercent) / 100 - plan.team.assignedHours!;
+  const fit = suggestSprintFit(pullable, budgetHours, { prioritizeTypes });
+  const budget = hours(budgetHours);
+  const selectedHours = hours(fit.selectedHours);
+  // ponytail: picker caps at MAX_PICKER_IDS; a fit that large would need a bigger cap.
+  const chosen = fit.selected.slice(0, MAX_PICKER_IDS);
+  return {
+    ok: true,
+    summary: `${chosen.length} ${chosen.length === 1 ? "issue fits" : "issues fit"}`,
+    result: {
+      sprint: sprintInfo(plan.activeSprint),
+      targetPercent,
+      capacityHours: hours(plan.team.capacityHours),
+      alreadyPlannedHours: hours(plan.team.assignedHours!),
+      // <= 0 means no room at this target.
+      budgetHours: budget,
+      selectedHours,
+      // From the rounded figures so the three reconcile; 0 when there's no room.
+      leftoverHours: budget > 0 ? hours(budget - selectedHours) : 0,
+      selectedCount: fit.selected.length,
+      eligibleCount: pullable.filter(hasPullableEstimate).length,
+      // YouTrack listing was capped -- the fit covers only part of the backlog.
+      backlogTruncated,
+      // Only when there was room but nothing fit -- the smallest one is still too big.
+      ...(budgetHours > 0 && fit.selected.length === 0 && { smallestEligibleHours: optionalHours(fit.smallestEligibleHours) }),
+      // Capped like list_backlog_issues; selectedCount is the real count.
+      selected: fit.selected.slice(0, MAX_ROWS_TO_MODEL).map((issue) => issue.id),
+    },
+    ...(chosen.length > 0 && {
+      ui: buildPickerSurface(`picker-${randomUUID()}`, chosen, { preselect: true, hasActiveSprint }),
+    }),
+  };
+}
+
 // Binds add_issues_to_sprint to the same path as the picker's Add button
 // (validation, pulls, page revalidation). Absent -> the tool reports it.
 export type AddIssues = (ids: string[]) => Promise<AddIssuesToActiveSprintResult>;
@@ -342,6 +403,27 @@ export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssu
         result: { results: added.results },
       };
     }
+    // suggest_sprint_fit: validate and load capacity before the YouTrack call.
+    let plan: SprintPlanData | null = null;
+    let targetPercent = 100;
+    if (name === "suggest_sprint_fit") {
+      // Numeric strings ("85") accepted; fractions like 0.85 rejected (schema says 1-100).
+      targetPercent = args.targetPercent == null || args.targetPercent === "" ? 100 : Number(args.targetPercent);
+      if (typeof args.targetPercent === "boolean" || !(targetPercent >= 1 && targetPercent <= 100)) {
+        return { ok: false, error: "The target must be a percentage from 1 to 100." };
+      }
+      if (!appData) return { ok: false, error: "Sprint figures aren't available here." };
+      try {
+        plan = await appData.capacity();
+      } catch (error) {
+        console.error(`Assistant agent tool ${name} failed:`, error);
+        return { ok: false, error: "Could not load this app's Sprint figures. Please try again." };
+      }
+      if (!plan) return { ok: true, result: { activeSprint: null } };
+      if (!plan.devCategoryExists || plan.team.assignedHours === undefined) {
+        return { ok: false, error: "No Dev allocation category is set up, so the Sprint's capacity is unknown." };
+      }
+    }
     try {
       const state = await loadState();
       if (!state.ok) return { ok: false, error: state.error };
@@ -349,6 +431,8 @@ export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssu
       const activeSprint = state.activeSprint
         ? { startDate: state.activeSprint.startDate.toISOString().slice(0, 10), endDate: state.activeSprint.endDate.toISOString().slice(0, 10) }
         : null;
+
+      if (name === "suggest_sprint_fit") return runSprintFit(args, targetPercent, pullable, state.truncated, plan!, state.activeSprint !== null);
 
       if (name === "list_backlog_issues") {
         const estimate = args.estimate === "with" || args.estimate === "without" ? args.estimate : "any";
@@ -492,7 +576,7 @@ export function composeTools(
       // App tools with no rows get no table -- the single-record fallback
       // would render their wrapper as a misleading "1 result". MCP results
       // (e.g. get_current_user) keep that fallback.
-      if (APP_TOOL_NAMES.has(name) && !hasRows(outcome.result)) return outcome;
+      if ((APP_TOOL_NAMES.has(name) || name === "suggest_sprint_fit") && !hasRows(outcome.result)) return outcome;
       const table = buildResultSurface(`result-${randomUUID()}`, name, outcome.result);
       return table ? { ...outcome, ui: table.surface, summary: outcome.summary ?? table.summary } : outcome;
     },

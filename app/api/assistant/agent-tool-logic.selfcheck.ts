@@ -79,11 +79,11 @@ async function main() {
     );
     assert.deepEqual(tools.map((t) => t.name), [
       "list_backlog_issues", "show_issue_picker", "add_issues_to_sprint",
-      "get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "get_leave",
+      "get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "suggest_sprint_fit", "get_leave",
       "search_issues",
     ]);
     // Groq free-tier budget.
-    for (const tool of tools.filter((t) => t.name.startsWith("get_"))) assert.ok(tool.description!.length <= 200, tool.name);
+    for (const tool of tools.filter((t) => t.name.startsWith("get_") || t.name === "suggest_sprint_fit")) assert.ok(tool.description!.length <= 200, tool.name);
     await executeTool("list_backlog_issues", {});
     await executeTool("show_issue_picker", {});
     await executeTool("search_issues", {});
@@ -318,6 +318,100 @@ async function main() {
       // Velocity doesn't depend on the active Sprint.
       if (tool !== "get_velocity_history") assert.equal(await tableOf(none, tool), undefined, `${tool} no sprint -> no table`);
     }
+  }
+
+  // SUGGEST_SPRINT_FIT -- every I/O matrix row, with fakes.
+  {
+    const active = { id: "s1", name: "Sprint 7", startDate: new Date("2026-10-05T00:00:00Z"), endDate: new Date("2026-10-16T00:00:00Z") };
+    const plan = (capacityHours: number, assignedHours: number | undefined, devCategoryExists = true) => ({
+      activeSprint: active,
+      devCategoryExists,
+      team: { capacityHours, fullDevHours: capacityHours, breakdown: [], assignedHours, overAllocated: undefined },
+      members: [],
+      assignedIssues: [],
+    });
+    const fake = (capacity: AppData["capacity"]): AppData => ({
+      capacity,
+      progress: async () => null,
+      velocity: async () => ({ rows: [], averageDelta: 0 }),
+      leave: async () => null,
+    });
+    const pri = (id: string, type: string, priority: string | null, estimateHours: number | null) => ({ ...mk(id, type, estimateHours), priority });
+    const backlog = state({
+      issues: [
+        pri("F-1", "Task", "Major", 20), pri("F-2", "Bug", "Minor", 10), pri("F-3", "Task", "Critical", 15),
+        pri("F-4", "Task", null, 8), pri("F-5", "Task", "Normal", null), pri("F-6", "Story", "Critical", 5), pri("F-7", "Task", "Critical", 4),
+      ],
+      rollups: { "F-6": 5 }, // parent -> never pullable
+      pulledIds: new Set(["F-7"]),
+    });
+    type Fit = { budgetHours: number; selectedHours: number; leftoverHours: number; selectedCount: number; eligibleCount: number; selected: string[]; smallestEligibleHours?: number | null };
+    const fitRun = (p: ReturnType<typeof plan> | null, b: BacklogState = backlog) => runAgentToolWith(async () => b, undefined, fake(async () => p));
+    const fitOf = async (p: ReturnType<typeof plan>, args: Record<string, unknown> = {}) => {
+      const out = await fitRun(p)("suggest_sprint_fit", args);
+      assert.ok(out.ok);
+      return out.result as Fit;
+    };
+
+    // Fits -- capacity 100, pulled 60, target 100 -> 40h budget; Critical, Major first; the 10h and 8h no longer fit.
+    const fits = await fitRun(plan(100, 60))("suggest_sprint_fit", {});
+    assert.ok(fits.ok);
+    const f = fits.result as Fit;
+    assert.deepEqual(f.selected, ["F-3", "F-1"]);
+    assert.deepEqual([f.budgetHours, f.selectedHours, f.leftoverHours, f.selectedCount, f.eligibleCount], [40, 35, 5, 2, 4]);
+    assert.ok(!("smallestEligibleHours" in f));
+    // Picker shows only the chosen issues, pre-ticked; nothing is added (no Add path bound).
+    const picker = (fits.ui as { messages: { updateComponents?: { components: { select: { preselect: boolean }; rows: { id: string }[] }[] } }[] }).messages[1].updateComponents!.components[0];
+    assert.deepEqual([picker.select.preselect, picker.rows.map((r) => r.id)], [true, ["F-3", "F-1"]]);
+    // Deterministic -- same input, same suggestion.
+    assert.deepEqual((await fitOf(plan(100, 60))).selected, f.selected);
+
+    // Target % -- 85% of 100 minus 60 = 25h; rounded to 1 decimal.
+    const target = await fitOf(plan(100.04, 60), { targetPercent: 85 });
+    assert.deepEqual([target.budgetHours, target.selected], [25, ["F-3", "F-2"]]);
+
+    // Type preference -- Bugs considered before any other type.
+    assert.deepEqual((await fitOf(plan(100, 60), { prioritizeTypes: ["Bug"] })).selected, ["F-2", "F-3", "F-4"]);
+
+    // No room -- ok, budget <= 0, nothing chosen, no picker (and no fallback table).
+    const noRoom = await composeTools([], fitRun(plan(100, 100)), async () => ({ ok: true, result: null })).executeTool("suggest_sprint_fit", { targetPercent: 90 });
+    assert.ok(noRoom.ok);
+    assert.equal((noRoom.result as Fit).budgetHours, -10);
+    assert.deepEqual((noRoom.result as Fit).selected, []);
+    // No room is not "too big": no smallestEligibleHours, leftover 0 (not -10).
+    assert.ok(!("smallestEligibleHours" in (noRoom.result as Fit)));
+    assert.equal((noRoom.result as Fit).leftoverHours, 0);
+    assert.equal(noRoom.ui, undefined);
+
+    // Nothing fits -- budget 5h, smallest eligible 8h reported, no picker.
+    const tight = await fitRun(plan(100, 95))("suggest_sprint_fit", {});
+    assert.ok(tight.ok);
+    assert.deepEqual([(tight.result as Fit).selected, (tight.result as Fit).smallestEligibleHours], [[], 8]);
+    assert.equal(tight.ui, undefined);
+
+    // backlogTruncated passes through.
+    assert.equal((f as Fit & { backlogTruncated: boolean }).backlogTruncated, false);
+    const truncatedFit = await fitRun(plan(100, 60), { ...(backlog as Extract<BacklogState, { ok: true }>), truncated: true })("suggest_sprint_fit", {});
+    assert.ok(truncatedFit.ok);
+    assert.equal((truncatedFit.result as { backlogTruncated: boolean }).backlogTruncated, true);
+
+    // Numeric-string target accepted; a lone prioritizeTypes string is a one-item list.
+    assert.equal((await fitOf(plan(100.04, 60), { targetPercent: "85" })).budgetHours, 25);
+    assert.deepEqual((await fitOf(plan(100, 60), { prioritizeTypes: "Bug" })).selected, ["F-2", "F-3", "F-4"]);
+
+    // capacity() throwing -> plain tool error.
+    const throwingCap = runAgentToolWith(async () => backlog, undefined, fake(async () => { throw new Error("db down"); }));
+    assert.deepEqual(await throwingCap("suggest_sprint_fit", {}), { ok: false, error: "Could not load this app's Sprint figures. Please try again." });
+
+    // No active sprint / no Dev category / bad target / not bound.
+    assert.deepEqual(await fitRun(null)("suggest_sprint_fit", {}), { ok: true, result: { activeSprint: null } });
+    assert.equal((await fitRun(plan(0, undefined, false))("suggest_sprint_fit", {})).ok, false);
+    for (const bad of [0, -5, 101, 0.85, "eighty", true]) {
+      assert.equal((await fitRun(plan(100, 60))("suggest_sprint_fit", { targetPercent: bad })).ok, false, String(bad));
+    }
+    assert.equal((await runAgentToolWith(async () => backlog)("suggest_sprint_fit", {})).ok, false);
+    // YouTrack down -> plain tool error.
+    assert.deepEqual(await fitRun(plan(100, 60), { ok: false, error: "YouTrack is not connected yet" })("suggest_sprint_fit", {}), { ok: false, error: "YouTrack is not connected yet" });
   }
 
   console.log("agent-tool-logic.selfcheck: all assertions passed");

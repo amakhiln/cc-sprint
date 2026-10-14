@@ -9,7 +9,7 @@ const CAPABILITIES = [
     title: "Sprint backlog",
     icon: CalendarPlus,
     description: "Filter the pullable backlog by type and estimate, then tick issues to add to the active Sprint.",
-    examples: ["Show sub-tasks without estimates", "Add the estimated tasks to the sprint"],
+    examples: ["Show sub-tasks without estimates", "Add the estimated tasks to the sprint", "Fill the sprint to 85%, bugs first"],
   },
   {
     title: "Sprint capacity & progress",

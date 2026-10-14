@@ -363,3 +363,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-assistant-sprint-data-tools.md`
   summary: getVelocityHistoryData runs one listForSprint query per closed Sprint (N+1) on every page load and assistant call.
   evidence: pre-existing in the velocity page; cost grows with sprint history.
+- source_spec: `_bmad-output/implementation-artifacts/spec-assistant-capacity-fit-suggestions.md`
+  summary: suggest_sprint_fit caps the model-facing `selected` ids at 50 with no returned/partial marker and no test.
+  evidence: only matters when a fit picks >50 issues; `selectedCount` still carries the real count.

@@ -13,6 +13,7 @@ import {
   filterBacklogIssues,
   listBacklogIssues,
   selectableSprints,
+  suggestSprintFit,
   type YouTrackSprint,
   type YouTrackConfig,
   type YouTrackConfigRepo,
@@ -148,6 +149,47 @@ async function main() {
     assert.deepEqual(result.map((s) => s.youtrackSprintId), ["22", "23"], "sorted by start, filtered");
     assert.deepEqual(result[0], { youtrackSprintId: "22", name: "Sprint 22", startDate: "2026-10-15", lengthDays: 14 });
     assert.deepEqual(selectableSprints([], [], today), []);
+  }
+
+  // suggestSprintFit -- greedy, deterministic, only estimated issues.
+  {
+    const issue = (id: string, type: string, priority: string | null, estimateHours: number | null) => ({
+      id, summary: id, type, priority, estimateHours, assignee: null, state: null,
+    });
+    const issues = [
+      issue("A-1", "Task", "Normal", 20),
+      issue("A-2", "Bug", "Minor", 8),
+      issue("A-3", "Task", "Critical", 15),
+      issue("A-4", "Bug", null, 30),
+      issue("A-5", "Task", "Normal", 20),
+      issue("A-6", "Task", "Major", null), // no estimate -> never eligible
+      issue("A-7", "Task", "Major", 0),
+    ];
+    const ids = (fit: ReturnType<typeof suggestSprintFit>) => fit.selected.map((i) => i.id);
+
+    // Priority (Critical > Normal > Minor > none), then largest estimate, then
+    // id; A-5/A-2/A-4 skipped once they no longer fit, later ones still tried.
+    const fit = suggestSprintFit(issues, 40);
+    assert.deepEqual(ids(fit), ["A-3", "A-1"]);
+    assert.deepEqual([fit.selectedHours, fit.leftoverHours, fit.smallestEligibleHours], [35, 5, 8]);
+    // Skip-and-continue: 43h budget picks the 8h Minor after the 20h A-5 misses.
+    assert.deepEqual(ids(suggestSprintFit(issues, 43)), ["A-3", "A-1", "A-2"]);
+    // Deterministic regardless of input order.
+    assert.deepEqual(ids(suggestSprintFit([...issues].reverse(), 40)), ids(fit));
+
+    // prioritizeTypes first, case-insensitive, then the usual order (Minor before no priority).
+    assert.deepEqual(ids(suggestSprintFit(issues, 40, { prioritizeTypes: ["bug"] })), ["A-2", "A-4"]);
+    assert.deepEqual(ids(suggestSprintFit(issues, 100, { prioritizeTypes: ["Bug", " "] })), ["A-2", "A-4", "A-3", "A-1", "A-5"]);
+
+    // No room / nothing fits.
+    const none = suggestSprintFit(issues, 0);
+    assert.deepEqual([none.selected, none.selectedHours, none.smallestEligibleHours], [[], 0, 8]);
+    assert.deepEqual(ids(suggestSprintFit(issues, 7)), []);
+    assert.equal(suggestSprintFit([issues[5]], 10).smallestEligibleHours, null);
+    // Show-stopper ranks ahead of Critical.
+    assert.deepEqual(ids(suggestSprintFit([issues[2], issue("S-1", "Task", "Show-stopper", 15)], 15)), ["S-1"]);
+    // Float sums don't reject an exact fit.
+    assert.equal(suggestSprintFit([issue("F-1", "Task", null, 0.1), issue("F-2", "Task", null, 0.2)], 0.3).selected.length, 2);
   }
 
   console.log("youtrack.selfcheck: all assertions passed");

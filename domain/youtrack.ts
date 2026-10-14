@@ -199,3 +199,54 @@ export function selectableSprints(
       lengthDays: utcDay(s.finish) - utcDay(s.start) + 1,
     }));
 }
+
+// Assistant "what fits" -- greedy fill of a Sprint's remaining hours. Order:
+// prioritizeTypes first (in the order given, case-insensitive), then YouTrack
+// priority, then largest estimate, then id -- so the same input always picks
+// the same set. Issues that no longer fit are skipped, not stopped at.
+// ponytail: greedy, not an optimal knapsack -- fine for a suggestion the PM
+// reviews before adding.
+const PRIORITY_RANK = ["show-stopper", "critical", "major", "normal", "minor"];
+
+export type SprintFit = {
+  selected: YouTrackIssueSummary[];
+  selectedHours: number;
+  leftoverHours: number;
+  // Smallest estimate among eligible issues (null if none) -- explains "nothing fits".
+  smallestEligibleHours: number | null;
+};
+
+export function suggestSprintFit(
+  issues: YouTrackIssueSummary[],
+  budgetHours: number,
+  { prioritizeTypes = [] }: { prioritizeTypes?: string[] } = {},
+): SprintFit {
+  const types = prioritizeTypes.map((type) => type.trim().toLowerCase()).filter(Boolean);
+  const rank = (index: number) => (index === -1 ? Number.MAX_SAFE_INTEGER : index);
+  const typeRank = (issue: YouTrackIssueSummary) => rank(types.indexOf(issue.type?.toLowerCase() ?? ""));
+  const priorityRank = (issue: YouTrackIssueSummary) => rank(PRIORITY_RANK.indexOf(issue.priority?.toLowerCase() ?? ""));
+  const eligible = issues
+    .filter(hasPullableEstimate)
+    .sort(
+      (a, b) =>
+        typeRank(a) - typeRank(b) ||
+        priorityRank(a) - priorityRank(b) ||
+        b.estimateHours! - a.estimateHours! ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
+  const selected: YouTrackIssueSummary[] = [];
+  let selectedHours = 0;
+  for (const issue of eligible) {
+    // Epsilon so float sums (0.1 + 0.2) don't reject an exact fit.
+    if (selectedHours + issue.estimateHours! <= budgetHours + 1e-9) {
+      selected.push(issue);
+      selectedHours += issue.estimateHours!;
+    }
+  }
+  return {
+    selected,
+    selectedHours,
+    leftoverHours: budgetHours - selectedHours,
+    smallestEligibleHours: eligible.length > 0 ? Math.min(...eligible.map((issue) => issue.estimateHours!)) : null,
+  };
+}
