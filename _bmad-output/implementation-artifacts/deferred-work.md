@@ -353,3 +353,13 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-youtrack-sprint-sync.md`
   summary: There is no self-check showing that `createSprintAction` passes `name`/`youtrackSprintId` from FormData into `createSprint`.
   evidence: Verification-gap review. The action imports next/cache and Prisma, and the repo has no action-level test setup. Close it by extracting the FormData parsing into a small pure function with a self-check, or by a real-DB check in pm_test.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-assistant-sprint-data-tools.md`
+  summary: Extract the leave-in-range query into one shared pure helper used by both app/(pm)/leave/page.tsx and the assistant's loadLeave, with a selfcheck.
+  evidence: loadLeave in app/api/assistant/agent-tools.ts copies the leave page's query and has no check; drift between the two is possible.
+- source_spec: `_bmad-output/implementation-artifacts/spec-assistant-sprint-data-tools.md`
+  summary: Add a check for getVelocityHistoryData (averageDelta, snapshotCapacityHours) by splitting its pure part from the DB reads.
+  evidence: unverified (maybe-false): moved verbatim from the velocity page, but no selfcheck executes it; a pure-split selfcheck would settle it.
+- source_spec: `_bmad-output/implementation-artifacts/spec-assistant-sprint-data-tools.md`
+  summary: getVelocityHistoryData runs one listForSprint query per closed Sprint (N+1) on every page load and assistant call.
+  evidence: pre-existing in the velocity page; cost grows with sprint history.

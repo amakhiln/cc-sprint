@@ -11,6 +11,12 @@ import {
 } from "../../../domain/youtrack.ts";
 import { ALREADY_PULLED_ERROR, type PullBacklogIssueInput, type PullBacklogIssueResult } from "../../../domain/backlog-issue.ts";
 import type { Sprint } from "../../../domain/sprint.ts";
+import type { LeaveType } from "../../../domain/leave.ts";
+import { getDistinctWorkingDaysLost } from "../../../domain/calendar.ts";
+import { summarizeBurndown } from "../../../domain/progress.ts";
+import type { SprintPlanData, NamedCategoryHours } from "../../sprint-plan-data.ts";
+import type { ProgressData } from "../../progress-data.ts";
+import type { VelocityHistoryData } from "../../velocity-history-data.ts";
 import type { AssistantTool, ToolExecutor } from "../../../infrastructure/query-assistant/client.ts";
 import { buildPickerSurface } from "./picker-surface.ts";
 import { buildResultSurface } from "./result-surface.ts";
@@ -73,7 +79,227 @@ export const AGENT_TOOLS: AssistantTool[] = [
       additionalProperties: false,
     },
   },
+  // App-local, read-only Sprint figures (AD-1/AD-2). Descriptions stay <= 200
+  // chars for Groq's free-tier input-token budget.
+  {
+    name: "get_sprint_capacity",
+    description:
+      "This app's active Sprint capacity: team and per-member capacity, Dev hours, assigned hours, remaining capacity, over-allocation, days off, category hours.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_sprint_progress",
+    description:
+      "This app's active Sprint progress: estimate, logged (YouTrack work items), remaining and overrun per issue and in total, and where the burndown stands vs ideal.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_velocity_history",
+    description:
+      "This app's closed Sprints, most recent first: snapshot capacity, planned and actual velocity hours, delta (latest 12), and the average delta over all `total` of them.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "get_leave",
+    description:
+      "Team leave and company holidays overlapping a date range (from/to, YYYY-MM-DD, inclusive). Omit both for the active Sprint.",
+    parameters: {
+      type: "object",
+      properties: {
+        from: { type: "string", description: "Start date, YYYY-MM-DD." },
+        to: { type: "string", description: "End date, YYYY-MM-DD." },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
+
+type ToolOutcome = Awaited<ReturnType<ToolExecutor>>;
+
+export type DateRange = { startDate: Date; endDate: Date };
+
+export type LeaveData = {
+  range: DateRange;
+  leaves: { memberName: string; type: LeaveType; startDate: Date; endDate: Date }[];
+  holidays: DateRange[];
+};
+
+// The app's own loaders, injected so the core stays testable with fakes.
+// null = no active Sprint (for leave: only when no range was given).
+export type AppData = {
+  capacity: () => Promise<SprintPlanData | null>;
+  progress: () => Promise<ProgressData | null>;
+  velocity: () => Promise<VelocityHistoryData>;
+  leave: (range: DateRange | null) => Promise<LeaveData | null>;
+};
+
+const APP_TOOL_NAMES = new Set(["get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "get_leave"]);
+// Rows sent to the model per list; counts still report the real total.
+const MAX_APP_ROWS = 50;
+const MAX_VELOCITY_SPRINTS = 12;
+
+const hasRows = (result: unknown) =>
+  result !== null && typeof result === "object" && Object.values(result).some((value) => Array.isArray(value) && value.length > 0);
+
+const iso = (date: Date) => date.toISOString().slice(0, 10);
+const hours = (value: number) => Math.round(value * 10) / 10;
+const optionalHours = (value: number | null | undefined) => (value == null ? null : hours(value));
+const sprintInfo = (sprint: { name: string | null; startDate: Date; endDate: Date }) => ({
+  name: sprint.name,
+  startDate: iso(sprint.startDate),
+  endDate: iso(sprint.endDate),
+});
+const categoryHours = (breakdown: NamedCategoryHours[]) =>
+  Object.fromEntries(breakdown.map((category) => [category.categoryName, hours(category.hours)]));
+
+function parseIsoDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  // Round-trip rejects impossible days like 2026-02-30.
+  return !Number.isNaN(date.getTime()) && iso(date) === value ? date : null;
+}
+
+// Each result's first array is the rows the PM sees as a table
+// (buildResultSurface renders the first array). Every figure is precomputed
+// so the model only narrates; it never does arithmetic.
+async function runAppTool(name: string, args: Record<string, unknown>, data: AppData): Promise<ToolOutcome> {
+  if (name === "get_sprint_capacity") {
+    const plan = await data.capacity();
+    if (!plan) return { ok: true, result: { activeSprint: null } };
+    const { team } = plan;
+    const teamCapacity = hours(team.capacityHours);
+    const teamAssigned = optionalHours(team.assignedHours);
+    return {
+      ok: true,
+      result: {
+        sprint: sprintInfo(plan.activeSprint),
+        ...(!plan.devCategoryExists && { note: "No Dev allocation category is set up, so capacity is 0." }),
+        team: {
+          capacityHours: teamCapacity,
+          fullDevHours: hours(team.fullDevHours),
+          assignedHours: teamAssigned,
+          // From the rounded figures, so the three shown numbers reconcile.
+          // Positive = room for more work; negative = over-allocated by that much.
+          remainingCapacityHours: teamAssigned === null ? null : hours(teamCapacity - teamAssigned),
+          // null = not computed (e.g. no Dev category), never a false "fine".
+          overAllocated: team.overAllocated ?? null,
+          categoryHours: categoryHours(team.breakdown),
+        },
+        members: plan.members.map((member) => ({
+          name: member.name,
+          capacityHours: hours(member.capacityHours),
+          assignedHours: optionalHours(member.assignedHours),
+          overAllocated: member.overAllocated ?? null,
+          daysOff: getDistinctWorkingDaysLost(member.sprintEntries, plan.activeSprint),
+          fullDevHours: hours(member.fullDevHours),
+          categoryHours: categoryHours(member.breakdown),
+        })),
+      },
+    };
+  }
+
+  if (name === "get_sprint_progress") {
+    const progress = await data.progress();
+    if (!progress) return { ok: true, result: { activeSprint: null } };
+    if (!progress.loggedAvailable) {
+      return {
+        ok: false,
+        error: "Couldn't load logged time from YouTrack (not connected, or the request failed), so Sprint progress isn't available right now.",
+      };
+    }
+    const { totals } = progress;
+    const burndown = summarizeBurndown(progress.burndown);
+    return {
+      ok: true,
+      result: {
+        sprint: sprintInfo(progress.sprint),
+        totals: {
+          issueCount: totals.issueCount,
+          estimateHours: hours(totals.estimateHours),
+          loggedHours: hours(totals.loggedHours),
+          remainingHours: hours(totals.remainingHours),
+          overrunHours: hours(totals.overrunHours),
+          overrunIssueCount: totals.overrunIssueCount,
+        },
+        total: progress.issues.length,
+        issues: progress.issues.slice(0, MAX_APP_ROWS).map((issue) => ({
+          id: issue.youtrackIssueId,
+          title: issue.title,
+          assignee: issue.assigneeName ?? "Unassigned",
+          estimateHours: hours(issue.estimateHours),
+          remainingHours: hours(issue.remainingHours),
+          loggedHours: hours(issue.loggedHours),
+          ...(issue.overrunHours > 0 && { overrunHours: hours(issue.overrunHours) }),
+        })),
+        // After issues, so issues stays the table's (first) array.
+        members: progress.members.map((member) => ({
+          name: member.name,
+          estimateHours: hours(member.estimateHours),
+          loggedHours: hours(member.loggedHours),
+          remainingHours: hours(member.remainingHours),
+          overrunHours: hours(member.overrunHours),
+        })),
+        // Latest known point only, never the full series. behindByHours > 0 =
+        // behind the ideal line, < 0 = ahead.
+        burndown: burndown && {
+          date: iso(burndown.date),
+          idealHours: hours(burndown.idealHours),
+          remainingHours: hours(burndown.remainingHours),
+          behindByHours: hours(burndown.behindByHours),
+        },
+      },
+    };
+  }
+
+  if (name === "get_velocity_history") {
+    const { rows, averageDelta } = await data.velocity();
+    return {
+      ok: true,
+      result: {
+        total: rows.length,
+        // Over all `total` closed Sprints, not just the rows listed.
+        averageDeltaHours: hours(averageDelta),
+        sprints: rows.slice(0, MAX_VELOCITY_SPRINTS).map(({ sprint, ...row }) => ({
+          name: sprint.name,
+          dates: `${iso(sprint.startDate)} to ${iso(sprint.endDate)}`,
+          capacityHours: optionalHours(row.snapshotCapacityHours),
+          plannedHours: hours(row.plannedVelocityHours),
+          actualHours: hours(row.actualVelocityHours),
+          deltaHours: hours(row.delta),
+        })),
+      },
+    };
+  }
+
+  // get_leave
+  let range: DateRange | null = null;
+  if (args.from !== undefined || args.to !== undefined) {
+    const startDate = parseIsoDate(args.from);
+    const endDate = parseIsoDate(args.to);
+    if (!startDate || !endDate) return { ok: false, error: "Give both from and to as dates like 2026-10-14." };
+    if (startDate > endDate) return { ok: false, error: "The from date is after the to date." };
+    range = { startDate, endDate };
+  }
+  const leave = await data.leave(range);
+  if (!leave) return { ok: true, result: { activeSprint: null } };
+  // One row list (the table renders only the first array): leave plus
+  // company-wide holidays as "Everyone".
+  const entries = [
+    ...leave.leaves.map((entry) => ({ member: entry.memberName, type: entry.type as string, startDate: entry.startDate, endDate: entry.endDate })),
+    ...leave.holidays.map((holiday) => ({ member: "Everyone", type: "holiday", startDate: holiday.startDate, endDate: holiday.endDate })),
+  ].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  return {
+    ok: true,
+    result: {
+      from: iso(leave.range.startDate),
+      to: iso(leave.range.endDate),
+      total: entries.length,
+      entries: entries
+        .slice(0, MAX_APP_ROWS)
+        .map((entry) => ({ ...entry, startDate: iso(entry.startDate), endDate: iso(entry.endDate) })),
+    },
+  };
+}
 
 // Binds add_issues_to_sprint to the same path as the picker's Add button
 // (validation, pulls, page revalidation). Absent -> the tool reports it.
@@ -89,9 +315,19 @@ function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssues?: AddIssues): ToolExecutor {
+export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssues?: AddIssues, appData?: AppData): ToolExecutor {
   return async (name, args) => {
     if (!isAgentTool(name)) return { ok: false, error: `Unknown tool: ${name}` };
+    // Before loadState() -- these never need the YouTrack backlog.
+    if (APP_TOOL_NAMES.has(name)) {
+      if (!appData) return { ok: false, error: "Sprint figures aren't available here." };
+      try {
+        return await runAppTool(name, args, appData);
+      } catch (error) {
+        console.error(`Assistant agent tool ${name} failed:`, error);
+        return { ok: false, error: "Could not load this app's Sprint figures. Please try again." };
+      }
+    }
     if (name === "add_issues_to_sprint") {
       if (!addIssues) return { ok: false, error: "Adding to the Sprint isn't available here." };
       const ids = Array.isArray(args.issueIds) ? args.issueIds.filter((id): id is string => typeof id === "string") : [];
@@ -253,6 +489,10 @@ export function composeTools(
     executeTool: async (name, args) => {
       const outcome = await (isAgentTool(name) ? runAgent(name, args) : runMcp(name, args));
       if (!outcome.ok || outcome.ui != null) return outcome;
+      // App tools with no rows get no table -- the single-record fallback
+      // would render their wrapper as a misleading "1 result". MCP results
+      // (e.g. get_current_user) keep that fallback.
+      if (APP_TOOL_NAMES.has(name) && !hasRows(outcome.result)) return outcome;
       const table = buildResultSurface(`result-${randomUUID()}`, name, outcome.result);
       return table ? { ...outcome, ui: table.surface, summary: outcome.summary ?? table.summary } : outcome;
     },

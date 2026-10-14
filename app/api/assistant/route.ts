@@ -41,6 +41,9 @@ const SYSTEM_PROMPT = [
   "Call show_issue_picker only to narrow the pick list to specific ids (e.g. the PM named issues but didn't ask to add them yet).",
   "Don't repeat the issue list in prose -- the pick list shows it; just report the count (and how many need an estimate). If returned < total, or backlogTruncated is true, say your summary covers only part of the list.",
   "Use list_backlog_issues (not search_issues) for questions about which backlog issues can be pulled, or which lack estimates.",
+  "For capacity, allocation, sprint progress/burndown, velocity history and leave/holidays, use this app's tools (get_sprint_capacity, get_sprint_progress, get_velocity_history, get_leave), not YouTrack tools.",
+  "Quote their figures exactly as returned (never recompute or add them up) and say they come from this app. remainingCapacityHours < 0 means over-allocated by that much; burndown behindByHours > 0 means behind the ideal line; burndown null means no burndown data yet. If total > rows returned, say the list is partial.",
+  "If one returns activeSprint: null, say plainly there is no active Sprint. For get_leave with a relative range like 'next week', work out the dates from today's date, and state the from/to dates the tool returned.",
   "Prefer calling a tool over guessing. Never state a specific figure, count, status, or fact unless a tool call actually returned it.",
   "If no available tool can answer the question, say so plainly instead of inventing an answer.",
   "Keep answers concise and grounded only in the tool results you actually received this turn.",
@@ -134,7 +137,8 @@ export async function POST(request: Request) {
         apiKey,
         model: MODEL,
         messages: [
-          { role: "system", content: `${SYSTEM_PROMPT} ${tickedIdsNote((body as { selectedIssueIds?: unknown }).selectedIssueIds)}` },
+          // ponytail: UTC date, matching the app's UTC-midnight day convention.
+          { role: "system", content: `${SYSTEM_PROMPT} Today is ${new Date().toISOString().slice(0, 10)} (${new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}). ${tickedIdsNote((body as { selectedIssueIds?: unknown }).selectedIssueIds)}` },
           ...clientMessages.slice(-MAX_HISTORY_MESSAGES),
         ],
         tools,

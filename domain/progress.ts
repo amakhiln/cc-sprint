@@ -121,3 +121,18 @@ export function computeBurndown({
   }
   return points;
 }
+
+export type BurndownSummary = { date: Date; idealHours: number; remainingHours: number; behindByHours: number };
+
+// The latest point with a known remaining (today, or the Sprint's end once
+// past it). behindByHours > 0 means behind the ideal line, < 0 ahead.
+export function summarizeBurndown(points: BurndownPoint[]): BurndownSummary | null {
+  const latest = points.findLast((point) => point.remainingHours !== null);
+  if (!latest || latest.remainingHours === null) return null;
+  return {
+    date: latest.date,
+    idealHours: latest.idealHours,
+    remainingHours: latest.remainingHours,
+    behindByHours: Math.round((latest.remainingHours - latest.idealHours) * 100) / 100,
+  };
+}

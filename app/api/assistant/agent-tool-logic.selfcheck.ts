@@ -2,7 +2,9 @@
 // sources (no DB, no YouTrack). Run with:
 //   node app/api/assistant/agent-tool-logic.selfcheck.ts
 import assert from "node:assert/strict";
-import { addIssuesWith, composeTools, runAgentToolWith, type BacklogState } from "./agent-tool-logic.ts";
+import { addIssuesWith, composeTools, runAgentToolWith, type AppData, type BacklogState } from "./agent-tool-logic.ts";
+import type { ResultTableProps } from "./result-surface.ts";
+import type { ToolExecutor } from "../../../infrastructure/query-assistant/client.ts";
 import { ALREADY_PULLED_ERROR, type PullBacklogIssueInput } from "../../../domain/backlog-issue.ts";
 
 const mk = (id: string, type: string, estimateHours: number | null) => ({
@@ -75,7 +77,13 @@ async function main() {
       async (name) => (calls.push(`agent:${name}`), { ok: true, result: null }),
       async (name) => (calls.push(`mcp:${name}`), { ok: true, result: null }),
     );
-    assert.deepEqual(tools.map((t) => t.name), ["list_backlog_issues", "show_issue_picker", "add_issues_to_sprint", "search_issues"]);
+    assert.deepEqual(tools.map((t) => t.name), [
+      "list_backlog_issues", "show_issue_picker", "add_issues_to_sprint",
+      "get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "get_leave",
+      "search_issues",
+    ]);
+    // Groq free-tier budget.
+    for (const tool of tools.filter((t) => t.name.startsWith("get_"))) assert.ok(tool.description!.length <= 200, tool.name);
     await executeTool("list_backlog_issues", {});
     await executeTool("show_issue_picker", {});
     await executeTool("search_issues", {});
@@ -140,6 +148,176 @@ async function main() {
     assert.deepEqual(await addIssuesWith(async () => state({ activeSprint: null }), pull, ["P-1"]), { ok: false, error: "No active Sprint" });
     assert.equal((await addIssuesWith(async () => state(), pull, [])).ok, false);
     assert.equal((await addIssuesWith(async () => state(), pull, [1])).ok, false);
+  }
+
+  // APP DATA TOOLS -- precomputed, 1-decimal, ISO dates; first array = table rows.
+  {
+    const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
+    const active = { id: "s1", name: "Sprint 7", startDate: d("2026-10-05"), endDate: d("2026-10-16") };
+    const cat = (hours: number) => [{ categoryId: "c1", categoryName: "Dev", hours }];
+    const leaveRanges: (unknown | null)[] = [];
+    const appData: AppData = {
+      capacity: async () => ({
+        activeSprint: active,
+        devCategoryExists: true,
+        team: { capacityHours: 100.04, fullDevHours: 120, breakdown: cat(100.04), assignedHours: 110.26, overAllocated: true },
+        members: [{
+          id: "m1", name: "Asha", workingHoursPerDay: 8, capacityHours: 50.04, fullDevHours: 60, breakdown: cat(50.04),
+          assignedHours: undefined, overAllocated: undefined, nonZeroAllocations: [],
+          // Mon-Tue leave + a Tue holiday -> 2 distinct working days off.
+          sprintEntries: [
+            { key: "l", label: "Planned Leave", startDate: d("2026-10-05"), endDate: d("2026-10-06") },
+            { key: "h", label: "Holiday", startDate: d("2026-10-06"), endDate: d("2026-10-06") },
+          ],
+        }],
+        assignedIssues: [],
+      }),
+      progress: async () => ({
+        sprint: active,
+        loggedAvailable: true,
+        totals: { estimateHours: 10, loggedHours: 7.25, remainingHours: 4, overrunHours: 1.25, issueCount: 2, overrunIssueCount: 1 },
+        members: [{ key: "m1", name: "Asha", estimateHours: 4, loggedHours: 5.25, remainingHours: 0, overrunHours: 1.25, issueCount: 1, overrunIssueCount: 1 }],
+        issues: [
+          { id: "b1", youtrackIssueId: "P-1", title: "One", assigneeId: null, assigneeName: null, youtrackUrl: null, estimateHours: 6, loggedHours: 2, remainingHours: 4, overrunHours: 0 },
+          { id: "b2", youtrackIssueId: "P-2", title: "Two", assigneeId: "m1", assigneeName: "Asha", youtrackUrl: null, estimateHours: 4, loggedHours: 5.25, remainingHours: 0, overrunHours: 1.25 },
+        ],
+        burndown: [
+          { date: d("2026-10-05"), isStart: true, idealHours: 10, remainingHours: 10 },
+          { date: d("2026-10-05"), isStart: false, idealHours: 9, remainingHours: 9.5 },
+          { date: d("2026-10-06"), isStart: false, idealHours: 8, remainingHours: null },
+        ],
+      }),
+      velocity: async () => ({
+        rows: [{
+          sprint: { ...active, youtrackSprintId: null, status: "closed", snapshotCapacityHours: 80.06, snapshotAllocationBreakdown: null, snapshotActualVelocityHours: 70 },
+          snapshotCapacityHours: 80.06, plannedVelocityHours: 75, actualVelocityHours: 70, delta: -5,
+        }],
+        averageDelta: -5.04,
+      }),
+      leave: async (range) => {
+        leaveRanges.push(range);
+        return {
+          range: range ?? active,
+          leaves: [{ memberName: "Asha", type: "planned", startDate: d("2026-10-05"), endDate: d("2026-10-06") }],
+          holidays: [{ startDate: d("2026-10-06"), endDate: d("2026-10-06") }],
+        };
+      },
+    };
+    const run = runAgentToolWith(async () => { throw new Error("app tools must not load the backlog"); }, undefined, appData);
+
+    const cap = await run("get_sprint_capacity", {});
+    assert.ok(cap.ok);
+    assert.deepEqual(cap.result, {
+      sprint: { name: "Sprint 7", startDate: "2026-10-05", endDate: "2026-10-16" },
+      // remaining from the rounded 100 and 110.3 (-10.3), not raw 100.04-110.26 (-10.2).
+      team: { capacityHours: 100, fullDevHours: 120, assignedHours: 110.3, remainingCapacityHours: -10.3, overAllocated: true, categoryHours: { Dev: 100 } },
+      // Comparison never computed -> null, not a false "not over-allocated".
+      members: [{ name: "Asha", capacityHours: 50, assignedHours: null, overAllocated: null, daysOff: 2, fullDevHours: 60, categoryHours: { Dev: 50 } }],
+    });
+
+    const prog = await run("get_sprint_progress", {});
+    assert.ok(prog.ok);
+    const p = prog.result as { total: number; totals: { loggedHours: number }; issues: { id: string; assignee: string; overrunHours?: number }[]; members: unknown; burndown: unknown };
+    assert.equal(p.total, 2);
+    assert.equal(p.totals.loggedHours, 7.3);
+    assert.deepEqual(p.issues.map((i) => [i.id, i.assignee, i.overrunHours]), [["P-1", "Unassigned", undefined], ["P-2", "Asha", 1.3]]);
+    assert.deepEqual(p.members, [{ name: "Asha", estimateHours: 4, loggedHours: 5.3, remainingHours: 0, overrunHours: 1.3 }]);
+    assert.deepEqual(p.burndown, { date: "2026-10-05", idealHours: 9, remainingHours: 9.5, behindByHours: 0.5 });
+    assert.equal(Object.values(p).find(Array.isArray), p.issues, "issues is the first array");
+
+    const vel = await run("get_velocity_history", {});
+    assert.ok(vel.ok);
+    assert.deepEqual(vel.result, {
+      total: 1,
+      averageDeltaHours: -5,
+      sprints: [{ name: "Sprint 7", dates: "2026-10-05 to 2026-10-16", capacityHours: 80.1, plannedHours: 75, actualHours: 70, deltaHours: -5 }],
+    });
+    const noVel = await runAgentToolWith(async () => state(), undefined, { ...appData, velocity: async () => ({ rows: [], averageDelta: 0 }) })("get_velocity_history", {});
+    assert.deepEqual(noVel, { ok: true, result: { total: 0, averageDeltaHours: 0, sprints: [] } });
+
+    const leave = await run("get_leave", { from: "2026-10-12", to: "2026-10-16" });
+    assert.ok(leave.ok);
+    assert.deepEqual(leaveRanges.pop(), { startDate: d("2026-10-12"), endDate: d("2026-10-16") });
+    assert.deepEqual(leave.result, {
+      from: "2026-10-12", to: "2026-10-16",
+      total: 2,
+      entries: [
+        { member: "Asha", type: "planned", startDate: "2026-10-05", endDate: "2026-10-06" },
+        { member: "Everyone", type: "holiday", startDate: "2026-10-06", endDate: "2026-10-06" },
+      ],
+    });
+    const sprintLeave = await run("get_leave", {});
+    assert.ok(sprintLeave.ok);
+    assert.equal(leaveRanges.pop(), null, "no range -> loader defaults to the active Sprint");
+    assert.equal((sprintLeave.result as { from: string }).from, "2026-10-05");
+    for (const bad of [{ from: "2026-10-16", to: "2026-10-12" }, { from: "2026-02-30", to: "2026-03-01" }, { from: "2026-10-12" }, { from: "next week", to: "2026-10-16" }]) {
+      assert.equal((await run("get_leave", bad)).ok, false, JSON.stringify(bad));
+    }
+
+    // NO_ACTIVE_SPRINT -- capacity / progress / leave-without-range.
+    const none = runAgentToolWith(async () => state(), undefined, {
+      ...appData, capacity: async () => null, progress: async () => null, leave: async () => null,
+    });
+    for (const tool of ["get_sprint_capacity", "get_sprint_progress", "get_leave"]) {
+      assert.deepEqual(await none(tool, {}), { ok: true, result: { activeSprint: null } }, tool);
+    }
+
+    // YouTrack worklog failure / loader throwing -> plain-word tool error.
+    const failing = runAgentToolWith(async () => state(), undefined, {
+      ...appData,
+      progress: async () => ({ ...(await appData.progress())!, loggedAvailable: false }),
+      velocity: async () => { throw new Error("db down"); },
+    });
+    assert.equal((await failing("get_sprint_progress", {})).ok, false);
+    assert.equal((await failing("get_velocity_history", {})).ok, false);
+    // Not bound -> clean error.
+    assert.equal((await runAgentToolWith(async () => state())("get_sprint_capacity", {})).ok, false);
+
+    // Rendering -- the table is built from each tool's intended row array.
+    const tableOf = async (executor: ToolExecutor, tool: string, args: Record<string, unknown> = {}) => {
+      const out = await composeTools([], executor, async () => ({ ok: true, result: null })).executeTool(tool, args);
+      assert.ok(out.ok, tool);
+      const ui = out.ui as { messages: { updateComponents?: { components: ResultTableProps[] } }[] } | undefined;
+      return ui && ui.messages[1].updateComponents!.components[0];
+    };
+    const capTable = (await tableOf(run, "get_sprint_capacity"))!;
+    assert.deepEqual([capTable.columns[0], capTable.rows.map((r) => r.cells[0])], ["name", ["Asha"]]);
+    const progTable = (await tableOf(run, "get_sprint_progress"))!;
+    assert.deepEqual([progTable.columns.slice(0, 2), progTable.rows.map((r) => r.cells[0])], [["id", "title"], ["P-1", "P-2"]]);
+    const velTable = (await tableOf(run, "get_velocity_history"))!;
+    assert.deepEqual([velTable.columns.slice(0, 2), velTable.rows.length], [["name", "dates"], 1]);
+    const leaveTable = (await tableOf(run, "get_leave"))!;
+    assert.deepEqual(leaveTable.columns, ["member", "type", "startDate", "endDate"]);
+    assert.equal(leaveTable.rows.length, 2);
+
+    // Holidays only -> labelled holiday rows.
+    const holidaysOnly = runAgentToolWith(async () => state(), undefined, {
+      ...appData,
+      leave: async () => ({ range: active, leaves: [], holidays: [{ startDate: d("2026-10-06"), endDate: d("2026-10-06") }] }),
+    });
+    assert.deepEqual((await tableOf(holidaysOnly, "get_leave"))!.rows.map((r) => r.cells), [["Everyone", "holiday", "2026-10-06", "2026-10-06"]]);
+
+    // Truncated -> real total in the result and in the table title ("50 of 60").
+    const many = Array.from({ length: 60 }, (_, i) => ({ memberName: `M${i}`, type: "planned" as const, startDate: d("2026-10-05"), endDate: d("2026-10-05") }));
+    const truncated = runAgentToolWith(async () => state(), undefined, { ...appData, leave: async () => ({ range: active, leaves: many, holidays: [] }) });
+    const tr = await truncated("get_leave", {});
+    assert.ok(tr.ok);
+    assert.deepEqual([(tr.result as { total: number }).total, (tr.result as { entries: unknown[] }).entries.length], [60, 50]);
+    assert.match((await tableOf(truncated, "get_leave"))!.title, /^50 of 60 shown/);
+
+    // Empty row lists / no active Sprint -> no table (not a "1 result" wrapper row).
+    const empty = runAgentToolWith(async () => state(), undefined, {
+      ...appData,
+      capacity: async () => ({ ...(await appData.capacity())!, members: [] }),
+      progress: async () => ({ ...(await appData.progress())!, issues: [], members: [] }),
+      velocity: async () => ({ rows: [], averageDelta: 0 }),
+      leave: async () => ({ range: active, leaves: [], holidays: [] }),
+    });
+    for (const tool of ["get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "get_leave"]) {
+      assert.equal(await tableOf(empty, tool), undefined, `${tool} empty -> no table`);
+      // Velocity doesn't depend on the active Sprint.
+      if (tool !== "get_velocity_history") assert.equal(await tableOf(none, tool), undefined, `${tool} no sprint -> no table`);
+    }
   }
 
   console.log("agent-tool-logic.selfcheck: all assertions passed");

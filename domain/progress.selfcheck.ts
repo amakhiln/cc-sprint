@@ -6,7 +6,7 @@
 // logic breaks. Add real tests if a runner ever gets installed.
 
 import assert from "node:assert/strict";
-import { computeIssueProgress, sumLoggedInSprint, sumProgress, computeBurndown } from "./progress.ts";
+import { computeIssueProgress, sumLoggedInSprint, sumProgress, computeBurndown, summarizeBurndown } from "./progress.ts";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -64,5 +64,9 @@ assert.deepEqual(
   [10, 8, 3, 3, null, null, null, null],
   "actual remaining clamps each issue at 0 and stops at today",
 );
+
+// BURNDOWN_SUMMARY -- latest non-null point (Wed: ideal 4, remaining 3 -> 1h ahead); none -> null.
+assert.deepEqual(summarizeBurndown(points), { date: day("2026-09-30"), idealHours: 4, remainingHours: 3, behindByHours: -1 });
+assert.equal(summarizeBurndown([{ date: day("2026-09-28"), isStart: false, idealHours: 5, remainingHours: null }]), null);
 
 console.log("progress.selfcheck: all assertions passed");

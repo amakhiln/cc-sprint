@@ -201,6 +201,9 @@ export function buildResultSurface(
     MAX_COLUMNS,
   );
 
+  // Nothing displayable (e.g. `{activeSprint: null}`) -- no empty table.
+  if (columns.length === 0) return null;
+
   const summary = countLabel(flat.length, typeof meta.total === "number" ? meta.total : rows.length, meta.hasNextPage === true);
   const props: ResultTableProps = {
     title: `${summary} · ${toolName.replaceAll("_", " ")}`,

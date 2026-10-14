@@ -1,6 +1,4 @@
-import { sprintRepository } from "@/infrastructure/db/sprint-repository";
-import { backlogIssueRepository } from "@/infrastructure/db/backlog-issue-repository";
-import { computePlannedVelocityHours, computeVelocityDelta } from "@/domain/velocity";
+import { getVelocityHistoryData } from "@/app/velocity-history-data";
 
 // Sprint dates are stored as UTC midnight (day-granularity, no time-of-day)
 // -- format in UTC so the displayed day never shifts with the viewer's local
@@ -20,29 +18,12 @@ function formatSignedHours(hours: number): string {
 }
 
 export default async function VelocityHistoryPage() {
-  const closedSprints = await sprintRepository.listClosed();
-  const rows = await Promise.all(
-    closedSprints.map(async (sprint) => {
-      const issues = await backlogIssueRepository.listForSprint(sprint.id);
-      const plannedVelocityHours = computePlannedVelocityHours(issues);
-      // A closed Sprint always has this written by Story 4.2's close flow;
-      // the `?? 0` is a type-level fallback (the field is nullable until
-      // close), never expected to actually apply to a closed row.
-      const actualVelocityHours = sprint.snapshotActualVelocityHours ?? 0;
-      return {
-        sprint,
-        plannedVelocityHours,
-        actualVelocityHours,
-        delta: computeVelocityDelta(actualVelocityHours, plannedVelocityHours),
-      };
-    }),
-  );
+  const { rows, averageDelta } = await getVelocityHistoryData();
 
   // Bullet-graph scale: the actual/planned fill and target tick in every
   // row read off the same axis, so a glance down the Trend column compares
   // sprints directly against each other, not just against themselves.
   const maxScale = Math.max(1, ...rows.map((row) => Math.max(row.plannedVelocityHours, row.actualVelocityHours)));
-  const averageDelta = rows.length > 0 ? rows.reduce((sum, row) => sum + row.delta, 0) / rows.length : 0;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 pt-6 pb-12">

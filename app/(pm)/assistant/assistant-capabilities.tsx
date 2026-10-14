@@ -1,4 +1,4 @@
-import { ListChecks, Users, BookOpen, FolderKanban, Ban, CalendarPlus } from "lucide-react";
+import { ListChecks, Users, BookOpen, FolderKanban, Ban, CalendarPlus, Gauge } from "lucide-react";
 
 // What the Assistant can actually answer -- one group per slice of the
 // read-only YouTrack MCP allowlist (infrastructure/youtrack-mcp/tool-allowlist.ts)
@@ -10,6 +10,17 @@ const CAPABILITIES = [
     icon: CalendarPlus,
     description: "Filter the pullable backlog by type and estimate, then tick issues to add to the active Sprint.",
     examples: ["Show sub-tasks without estimates", "Add the estimated tasks to the sprint"],
+  },
+  {
+    title: "Sprint capacity & progress",
+    icon: Gauge,
+    description: "This app's own capacity, allocation, burndown, velocity history, and leave figures.",
+    examples: [
+      "Do we have room for more work?",
+      "Are we behind on the burndown?",
+      "How has velocity trended?",
+      "Who's on leave next week?",
+    ],
   },
   {
     title: "Issues",
@@ -46,7 +57,7 @@ const CAPABILITIES = [
 const LIMITS = [
   "Never changes YouTrack — it can't create or edit issues, change assignees, comment, or log work.",
   "Never adds to the Sprint by itself — only your click on Add to sprint does.",
-  "Doesn't see this app's Capacity, Leave, or Progress figures.",
+  "Sprint lists show up to 50 rows, velocity covers the latest 12 closed Sprints, and progress needs the YouTrack connection for logged time.",
   "Forgets the conversation when you leave or reload the page.",
 ];
 
