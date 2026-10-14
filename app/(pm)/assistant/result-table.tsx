@@ -1,6 +1,7 @@
 "use client";
 
-// The app's own A2UI catalog: one ResultTable component, rendered with the
+// The app's own A2UI catalog: ResultTable (plus the standard components in
+// a2ui-components.tsx), rendered with the
 // app's styles. Read-only for tool results; with `select` it's the issue
 // picker (checkboxes + one button that dispatches an A2UI action). Its schema
 // and the server-side builders live in app/api/assistant/result-surface.ts
@@ -11,6 +12,7 @@ import { createComponentImplementation } from "@a2ui/react/v0_9";
 import { Catalog, type ComponentContext } from "@a2ui/web_core/v0_9";
 import { Button } from "@/components/ui/button";
 import { APP_CATALOG_ID, ResultTableApi, type ResultTableProps } from "@/app/api/assistant/result-surface";
+import { A2UI_BASIC_COMPONENTS } from "./a2ui-components";
 
 const HEADER_LABELS: Record<string, string> = { id: "ID", idReadable: "ID", estimateHours: "Estimate (h)" };
 
@@ -179,4 +181,5 @@ export const ResultTable = createComponentImplementation(ResultTableApi, ({ prop
   <ResultTableView props={props as ResultTableProps} context={context} />
 ));
 
-export const appCatalog = new Catalog(APP_CATALOG_ID, "0.9", [ResultTable]);
+// ResultTable plus app-styled renderers of A2UI's standard components.
+export const appCatalog = new Catalog(APP_CATALOG_ID, "0.9", [ResultTable, ...A2UI_BASIC_COMPONENTS]);

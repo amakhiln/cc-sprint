@@ -21,6 +21,7 @@ import type { VelocityHistoryData } from "../../velocity-history-data.ts";
 import type { AssistantTool, ToolExecutor } from "../../../infrastructure/query-assistant/client.ts";
 import { buildPickerSurface } from "./picker-surface.ts";
 import { buildResultSurface } from "./result-surface.ts";
+import { buildHelpSurface } from "./help.ts";
 
 // Keeps the model's context small; `total` still reports the real count.
 // Kept small for Groq free-tier input-token limits; the picker still caps at MAX_PICKER_IDS.
@@ -39,6 +40,12 @@ export type BacklogState =
   | { ok: false; error: string };
 
 export const AGENT_TOOLS: AssistantTool[] = [
+  {
+    name: "show_help",
+    description:
+      "Show the PM an interactive guide to what you can do, by Sprint stage, with one-click example questions. Use for 'what can you do / how can you help' questions.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
   {
     name: "list_backlog_issues",
     description:
@@ -379,6 +386,9 @@ function optionalString(value: unknown): string | undefined {
 export function runAgentToolWith(loadState: () => Promise<BacklogState>, addIssues?: AddIssues, appData?: AppData): ToolExecutor {
   return async (name, args) => {
     if (!isAgentTool(name)) return { ok: false, error: `Unknown tool: ${name}` };
+    if (name === "show_help") {
+      return { ok: true, summary: "Help guide", result: { shown: "help guide" }, ui: buildHelpSurface(`help-${randomUUID()}`) };
+    }
     // Before loadState() -- these never need the YouTrack backlog.
     if (APP_TOOL_NAMES.has(name)) {
       if (!appData) return { ok: false, error: "Sprint figures aren't available here." };

@@ -411,3 +411,17 @@
     opacity: 0;
   }
 }
+/* Help-guide tab panel (A2UI Tabs) -- a short settle-in on tab change so the
+   switch reads as a state change. Content is visible from the first frame;
+   reduced motion gets an instant swap. */
+@media (prefers-reduced-motion: no-preference) {
+  .a2ui-tab-panel {
+    animation: a2ui-tab-in 180ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+}
+@keyframes a2ui-tab-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(3px);
+  }
+}

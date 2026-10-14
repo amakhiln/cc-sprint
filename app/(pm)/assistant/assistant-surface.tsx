@@ -1,11 +1,11 @@
 "use client";
 
 // Renders one assistant A2UI surface with the app catalog (result-table.tsx):
-// a read-only result table, or the issue picker (picker-surface.ts), whose
-// Add action lands here. Client-only: @a2ui/react isn't SSR-safe, so
+// a read-only result table, the issue picker (picker-surface.ts), whose Add
+// action lands here, or the help guide (help.ts), whose Ask actions do. Client-only: @a2ui/react isn't SSR-safe, so
 // assistant-chat.tsx loads this via next/dynamic {ssr:false}.
 // Nothing here is persisted -- the surface lives in this component's memory.
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleAlert, CircleCheck } from "lucide-react";
 import { A2uiSurface, type ReactComponentImplementation } from "@a2ui/react/v0_9";
@@ -13,7 +13,9 @@ import { MessageProcessor, type ActionPayload } from "@a2ui/web_core/v0_9";
 import { addIssuesToActiveSprintAction } from "@/app/actions/assistant-sprint";
 import type { AddIssuesToActiveSprintResult } from "@/app/api/assistant/agent-tool-logic";
 import { ADD_TO_SPRINT_EVENT, pickedIssueIds } from "@/app/api/assistant/picker-surface";
+import { ASK_EVENT } from "@/app/api/assistant/help";
 import { appCatalog, PickContext, type PickRowStatus } from "./result-table";
+import { AskContext } from "./a2ui-components";
 
 // A surface id in this set ignores Add clicks while its add is in flight.
 // Added rows can't be re-ticked, so a later Add only ever sends new rows.
@@ -83,11 +85,25 @@ function AddResultBanner({ result }: { result: AddIssuesToActiveSprintResult }) 
 export function AssistantSurface({
   surface,
   onSelectionChange,
+  onAsk,
+  askDisabled = false,
 }: {
   surface: unknown;
   // Ticked ids of this surface's picker, reported up to the chat.
   onSelectionChange?: (surfaceId: string, ids: string[]) => void;
+  // A surface Button's `ask` action (help guide) sends its question here.
+  onAsk?: (question: string) => void;
+  askDisabled?: boolean;
 }) {
+  // An `ask` action, numbered so asking the same question twice still fires;
+  // handed to onAsk from an effect so the surface model never depends on it.
+  const [asked, setAsked] = useState<{ question: string; n: number } | null>(null);
+  const handledAsk = useRef(0);
+  useEffect(() => {
+    if (!asked || asked.n === handledAsk.current) return;
+    handledAsk.current = asked.n;
+    onAsk?.(asked.question);
+  }, [asked, onAsk]);
   const [result, setResult] = useState<AddIssuesToActiveSprintResult | null>(null);
   // Every row's latest add outcome, across repeated Adds on this surface.
   const [statuses, setStatuses] = useState<ReadonlyMap<string, PickRowStatus>>(new Map());
@@ -97,6 +113,11 @@ export function AssistantSurface({
     const { surfaceId, messages } = (surface ?? {}) as { surfaceId?: unknown; messages?: unknown };
     if (typeof surfaceId !== "string" || !Array.isArray(messages)) return null;
     const onAction = (action: ActionPayload) => {
+      if (action.name === ASK_EVENT) {
+        const question = action.context.question;
+        if (typeof question === "string" && question.trim()) setAsked((prev) => ({ question, n: (prev?.n ?? 0) + 1 }));
+        return;
+      }
       if (action.name !== ADD_TO_SPRINT_EVENT || lockedSurfaces.has(surfaceId)) return;
       const ids = pickedIssueIds(action.context.ids);
       if (ids.length === 0) {
@@ -142,15 +163,19 @@ export function AssistantSurface({
     [statuses, adding, id, onSelectionChange],
   );
 
+  const askContext = useMemo(() => ({ disabled: askDisabled || !onAsk }), [askDisabled, onAsk]);
+
   if (!model) {
     return <p className="text-xs text-destructive">Couldn&apos;t show this result.</p>;
   }
 
   return (
     <div className="glass-row flex flex-col gap-3 p-4 text-sm" aria-busy={adding}>
-      <PickContext.Provider value={pickContext}>
-        <A2uiSurface surface={model} />
-      </PickContext.Provider>
+      <AskContext.Provider value={askContext}>
+        <PickContext.Provider value={pickContext}>
+          <A2uiSurface surface={model} />
+        </PickContext.Provider>
+      </AskContext.Provider>
       {result && !adding && <AddResultBanner result={result} />}
     </div>
   );

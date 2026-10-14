@@ -15,6 +15,7 @@ import {
 import { isClientMessage, tickedIdsNote } from "./is-client-message.ts";
 import { createAgentToolExecutor } from "./agent-tools.ts";
 import { composeTools } from "./agent-tool-logic.ts";
+import { buildHelpSurface, HELP_INTRO, isHelpRequest } from "./help.ts";
 
 // Any Groq chat model id with tool calling; swap without a code change.
 const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
@@ -33,6 +34,7 @@ const MAX_TOOL_DESCRIPTION_CHARS = 400;
 const MAX_HISTORY_MESSAGES = 6;
 
 const SYSTEM_PROMPT = [
+  "If the PM asks what you can do or how you can help, call show_help and reply with one short sentence -- the guide shows the rest. Never answer with markdown tables or HTML tags.",
   "You are an assistant helping a project manager with their YouTrack project data and this app's active Sprint.",
   "You can never write to YouTrack. The only write you can make is adding backlog issues to this app's active Sprint with add_issues_to_sprint.",
   "To help the PM find backlog issues: call list_backlog_issues with the filters they asked for (type, estimate with/without, search). Its result is already shown to the PM as a pick list with checkboxes and an Add to sprint button.",
@@ -60,18 +62,21 @@ function encodeChunk(chunk: AssistantChunk): Uint8Array {
   return new TextEncoder().encode(JSON.stringify(chunk) + "\n");
 }
 
-// Single-chunk NDJSON stream -- used for every early-exit failure so the
-// client's reader (which always expects NDJSON AssistantChunk lines) never
-// has to special-case a different response shape for "never even started"
-// vs. "failed mid-turn".
-function errorStream(message: string): Response {
+// A fixed NDJSON stream -- used for every early exit (failures, the help
+// fast path) so the client's reader (which always expects NDJSON
+// AssistantChunk lines) never has to special-case a different response shape.
+function chunkStream(chunks: AssistantChunk[]): Response {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(encodeChunk({ type: "error", message }));
+      for (const chunk of chunks) controller.enqueue(encodeChunk(chunk));
       controller.close();
     },
   });
   return new Response(stream, { headers: { "Content-Type": "application/x-ndjson" } });
+}
+
+function errorStream(message: string): Response {
+  return chunkStream([{ type: "error", message }]);
 }
 
 export async function POST(request: Request) {
@@ -92,6 +97,16 @@ export async function POST(request: Request) {
     return errorStream("Invalid request body.");
   }
   const clientMessages: AssistantMessage[] = rawMessages;
+
+  // "What can you do?" -- answered with the help guide directly: no model
+  // call, no tokens, and it works before the assistant is even configured.
+  const latest = clientMessages[clientMessages.length - 1];
+  if (latest.role === "user" && isHelpRequest(latest.content)) {
+    return chunkStream([
+      { type: "text", delta: HELP_INTRO },
+      { type: "ui", surface: buildHelpSurface(`help-${crypto.randomUUID()}`) },
+    ]);
+  }
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {

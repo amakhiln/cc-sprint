@@ -78,16 +78,23 @@ async function main() {
       async (name) => (calls.push(`mcp:${name}`), { ok: true, result: null }),
     );
     assert.deepEqual(tools.map((t) => t.name), [
-      "list_backlog_issues", "show_issue_picker", "add_issues_to_sprint",
+      "show_help", "list_backlog_issues", "show_issue_picker", "add_issues_to_sprint",
       "get_sprint_capacity", "get_sprint_progress", "get_velocity_history", "suggest_sprint_fit", "get_leave",
       "search_issues",
     ]);
     // Groq free-tier budget.
-    for (const tool of tools.filter((t) => t.name.startsWith("get_") || t.name === "suggest_sprint_fit")) assert.ok(tool.description!.length <= 200, tool.name);
+    for (const tool of tools.filter((t) => t.name.startsWith("get_") || t.name === "suggest_sprint_fit" || t.name === "show_help")) assert.ok(tool.description!.length <= 200, tool.name);
     await executeTool("list_backlog_issues", {});
     await executeTool("show_issue_picker", {});
     await executeTool("search_issues", {});
     assert.deepEqual(calls, ["agent:list_backlog_issues", "agent:show_issue_picker", "mcp:search_issues"]);
+  }
+
+  // SHOW_HELP -- the help guide surface, without touching the backlog.
+  {
+    const help = await runAgentToolWith(async () => { throw new Error("help must not load the backlog"); })("show_help", {});
+    assert.ok(help.ok && help.ui, "show_help returns the guide surface");
+    assert.match((help.ui as { surfaceId: string }).surfaceId, /^help-/);
   }
 
   // CHAT_ADD -- add_issues_to_sprint goes through the injected Add path with

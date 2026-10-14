@@ -7,7 +7,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import type { AssistantChunk } from "@/infrastructure/query-assistant/client";
-import { AssistantCapabilities } from "./assistant-capabilities";
+import { buildHelpSurface } from "@/app/api/assistant/help";
 import { isAssistantChunk } from "./chunk";
 
 // @a2ui/react isn't SSR-safe -- client-only. Renders every A2UI surface:
@@ -15,6 +15,11 @@ import { isAssistantChunk } from "./chunk";
 const AssistantSurface = dynamic(() => import("./assistant-surface"), {
   ssr: false,
 });
+
+// The help guide (A2UI) shown on an empty chat and behind the "?" button --
+// the same surface the assistant answers "what can you do?" with.
+const WELCOME_GUIDE = buildHelpSurface("help-welcome");
+const PANEL_GUIDE = buildHelpSurface("help-panel");
 
 type ChatStep = Omit<Extract<AssistantChunk, { type: "step" }>, "type">;
 
@@ -263,12 +268,7 @@ export function AssistantChat() {
         )}
         <div role="log" aria-live="polite" aria-busy={pending} className="flex flex-1 flex-col gap-6 py-6">
           {messages.length === 0 ? (
-            <div className="glass flex flex-col gap-4 p-5 sm:p-7">
-              <p className="text-muted-foreground">
-                Ask a question about your YouTrack project data — or pick one of these to start.
-              </p>
-              <AssistantCapabilities onAsk={ask} disabled={pending} />
-            </div>
+            <AssistantSurface surface={WELCOME_GUIDE} onAsk={ask} askDisabled={pending} />
           ) : (
             messages.map((message, index) =>
               message.role === "user" ? (
@@ -312,7 +312,13 @@ export function AssistantChat() {
                       </p>
                     ) : null}
                     {message.surfaces.map((surface, surfaceIndex) => (
-                      <AssistantSurface key={surfaceId(surface) || surfaceIndex} surface={surface} onSelectionChange={reportSelection} />
+                      <AssistantSurface
+                        key={surfaceId(surface) || surfaceIndex}
+                        surface={surface}
+                        onSelectionChange={reportSelection}
+                        onAsk={ask}
+                        askDisabled={pending}
+                      />
                     ))}
                   </div>
                 </div>
@@ -323,8 +329,8 @@ export function AssistantChat() {
       </section>
 
       {showHelp && messages.length > 0 && (
-        <section id="assistant-help" aria-label="What the assistant can do" className="glass p-5 sm:p-6">
-          <AssistantCapabilities onAsk={ask} disabled={pending} />
+        <section id="assistant-help" aria-label="What the assistant can do">
+          <AssistantSurface surface={PANEL_GUIDE} onAsk={ask} askDisabled={pending} />
         </section>
       )}
 
