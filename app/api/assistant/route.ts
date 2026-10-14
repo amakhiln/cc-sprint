@@ -16,7 +16,8 @@ import { isClientMessage, tickedIdsNote } from "./is-client-message.ts";
 import { createAgentToolExecutor } from "./agent-tools.ts";
 import { composeTools } from "./agent-tool-logic.ts";
 
-const MODEL = "qwen/qwen3.8-27b";
+// Any Groq chat model id with tool calling; swap without a code change.
+const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 // Overall wall-clock bound for the whole request, on top of the fixed
 // per-call timeouts already inside runAssistantTurn (Groq) and
@@ -24,8 +25,8 @@ const MODEL = "qwen/qwen3.8-27b";
 // cap x each call's own timeout) still can't hang the response indefinitely.
 const REQUEST_TIMEOUT_MS = 60_000;
 
-// ponytail: Groq's free tier caps input tokens per minute (7k on
-// qwen/qwen3.8-27b), and every request resends system prompt + all tool
+// ponytail: Groq's free tier caps input tokens per minute (~8k on
+// gpt-oss-120b), and every request resends system prompt + all tool
 // schemas + history. YouTrack's own descriptions are long (search_issues is
 // ~3.3k chars), so clip them, and send only the recent conversation.
 const MAX_TOOL_DESCRIPTION_CHARS = 400;
